@@ -31,6 +31,12 @@ app.use(cors({
   credentials: true // Si usas cookies o autenticación
 }));
 
+app.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://tu-frontend.com');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.status(200).send();
+});
 //api endPoints
 app.use('/api/user',userRouter) 
 app.use('/api/product',productRouter)
