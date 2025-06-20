@@ -15,7 +15,8 @@ connectCloudinary();
 
 const allowedOrigins = [
   'https://food-delivery-frontend-virid.vercel.app',
-  'http://localhost:3000' // Para desarrollo local
+  'https://food-delivery-1jgnvzdvv-jonathan-fleitas-projects-16d8319f.vercel.app/',
+  'http://localhost:3000'// Para desarrollo local
 ];
 
 //middlewares
