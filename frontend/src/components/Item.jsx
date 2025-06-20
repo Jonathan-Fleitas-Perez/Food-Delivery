@@ -36,7 +36,7 @@ const Item = ({food}) => {
         <div className='mb-2 flexBetween'>
           <div className='flex gap-1'>
             {[...food.sizes].sort((a,b)=>{
-              const order = ["H",'F','S','M','L','XL'];
+              const order = ['S','M','L'];
               return order.indexOf(a)- order.indexOf(b)
             }).map((item,i)=>(
               <button onClick={()=>setsize(item)}  key={i} className={`${item === size ?'ring-1 ring-slate-900/10':''} h-6 w-8 bg-primary text-xs font-semibold rounded-sm`}>

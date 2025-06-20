@@ -5,6 +5,7 @@ import {FaRegWindowClose} from 'react-icons/fa'
 import {FaMinus , FaPlus} from 'react-icons/fa6'
 import CartTotal from "../components/CartTotal";
 import Footer from "../components/Footer";
+import { toast } from "react-toastify";
 
 const Cart = () => {
   const { foods, cartItems, currency, navigate,updateQuantity } = useContext(ShopConstest);
@@ -50,7 +51,7 @@ const Cart = () => {
     }
   
   return (
-    <section className="max-padd-container mt-24">
+    <section className="mt-24 max-padd-container">
       <div className="pt-6">
         <Tittle title1={"Cart "} title2={"List"} titleStyles={"h3"} />
 
@@ -63,13 +64,13 @@ const Cart = () => {
             const key = `${item._id}-${item.size}`;
 
             return (
-              <div key={i} className="p-2 rounded-xl bg-white mt-2">
+              <div key={i} className="p-2 mt-2 bg-white rounded-xl">
                 <div className="flex items-center gap-x-3">
                   <div className="flex items-start gap-6 p-2 bg-primary rounded-xl">
                     <img
                       src={productData.image}
                       alt={productData.name}
-                      className="w-16  sm:w-18"
+                      className="w-16 sm:w-18"
                     />
                   </div>
                   <div className="flex flex-col w-full">
@@ -79,7 +80,7 @@ const Cart = () => {
                     </div>
                     <p className="bold-14 my-0.5">{item.size}</p>
                     <div className="flexBetween">
-                      <div className="flex items-center ring-1 ring-slate-900/5 rounded-full overflow-hidden bg-primary">
+                      <div className="flex items-center overflow-hidden rounded-full ring-1 ring-slate-900/5 bg-primary">
                         <button onClick={()=>decrement(item._id,item.size)} className="p-1.5 bg-white text-secondary rounded-full shadow-md"><FaMinus className="text-xs"/></button>
                         <p className="px-2">{quantities[key]}</p>
                         <button onClick={()=>increment(item._id,item.size)} className="p-1.5 bg-white text-secondary rounded-full shadow-md"><FaPlus className="text-xs"/></button>
@@ -96,7 +97,7 @@ const Cart = () => {
         <div className="flex my-20">
           <div className="w-full sm:w-[450px]"> 
             <CartTotal/>
-            <button className='btn-dark mt-7'onClick={()=>navigate('/place-order')}>Proccess to Checkout</button>
+            <button className='btn-dark mt-7'onClick={()=>{if(cartData.length>0)navigate('/place-order'); else toast.error('No puedes realizar el pago sin productos en el carrito')}}>Proccess to Checkout</button>
           </div>
         </div>
       </div>

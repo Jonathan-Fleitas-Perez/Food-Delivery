@@ -140,6 +140,12 @@ const ShopContextProvider = (props) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[])
 
+  const isCartEmpty = () => {
+  return Object.values(cartItems).every(
+    sizeObj => Object.values(sizeObj).every(qty => qty <= 0)
+  );
+};
+
   const contextValue = {
     foods,
     currency,
@@ -149,6 +155,7 @@ const ShopContextProvider = (props) => {
     addToCart,
     getCartCount,
     token,
+    isCartEmpty,
     setToken,
     updateQuantity,
     getCartAmount,

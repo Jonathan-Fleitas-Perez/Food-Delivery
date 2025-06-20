@@ -1,18 +1,29 @@
-import express from 'express'
-import { allOrders, orderStatus, placeOrder, placeOrderStripe, userOrders, verifyStripe } from '../controllers/orderController.js'
-import adminAuth from '../middleware/adminAuth.js'
-import authUser from '../middleware/auth.js'
+import express from 'express';
+import { 
+  placeOrder, 
+  placeOrderStripe, 
+  allOrders, 
+  userOrders, 
+  orderStatus, 
+  verifyStripe,
+  deleteOrder // Importar nuevo controlador
+} from '../controllers/orderController.js';
+import adminAuth from '../middleware/adminAuth.js';
+import authUser from '../middleware/auth.js';
 
-const orderRouter = express.Router()
+const orderRouter = express.Router();
 
-//For admin
-orderRouter.post('/list',adminAuth,allOrders)
-orderRouter.post('/status',adminAuth,orderStatus)
-//For method payment
-orderRouter.post('/place',authUser,placeOrder)
-orderRouter.post('/stripe',authUser,placeOrderStripe) 
-//For user
-orderRouter.post('/userorders',authUser,userOrders)
-orderRouter.post('/verify',authUser,verifyStripe)
+// Para administrador
+orderRouter.post('/list', adminAuth, allOrders);
+orderRouter.post('/status', adminAuth, orderStatus);
+orderRouter.delete('/:orderId', adminAuth, deleteOrder); 
 
-export default orderRouter
+// Para métodos de pago
+orderRouter.post('/place', authUser, placeOrder);
+orderRouter.post('/stripe', authUser, placeOrderStripe);
+
+// Para usuario
+orderRouter.post('/userorders', authUser, userOrders);
+orderRouter.post('/verify', authUser, verifyStripe);
+
+export default orderRouter;
