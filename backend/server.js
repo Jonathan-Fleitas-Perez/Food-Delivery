@@ -13,10 +13,23 @@ const port = process.env.process || 4000;
 conectarBaseDatos(); 
 connectCloudinary();
 
+const allowedOrigins = [
+  'https://food-delivery-frontend-virid.vercel.app',
+  'http://localhost:3000' // Para desarrollo local
+];
 
 //middlewares
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Origen no permitido por CORS'));
+    }
+  },
+  credentials: true // Si usas cookies o autenticación
+}));
 
 //api endPoints
 app.use('/api/user',userRouter) 
