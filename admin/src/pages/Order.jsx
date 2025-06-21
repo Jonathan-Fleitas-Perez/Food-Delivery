@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import axios from 'axios';
 import { useState, useEffect } from 'react';
 import { backendUrl, currency } from '../App';
@@ -102,7 +103,7 @@ const Order = ({ token }) => {
 
   useEffect(() => {
     fetchAllOrders();
-  }, []);
+  }, [token]);
 
   return (
     <div className='px-2 sm:px-8'>
@@ -127,7 +128,7 @@ const Order = ({ token }) => {
 
             <div>
               <div className='flex gap-1 item-start'>
-                <div className='medium-14'>Items:</div>
+                <div className='medium-14'>Items: </div>
                 <div className='felx flex-col relative top-0.5'>
                   {order.items.map((item, index) => (
                     <p key={index}>
