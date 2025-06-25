@@ -15,8 +15,8 @@ const app = express();
 const port = process.env.PORT || 4000; // Cambié process.env.process por process.env.PORT
 
 const allowedOrigins = [
-  'https://food-delivery-frontend-virid.vercel.app',
-  'https://food-delivery-1jgnvzdvv-jonathan-fleitas-projects-16d8319f.vercel.app/',
+  'food-delivery-frontend-virid.vercel.app',
+  'food-delivery-ruby-alpha.vercel.app',
   'http://localhost:5173', // Para desarrollo local
   'http://localhost:5174'
 ];
@@ -35,7 +35,7 @@ app.use(cors({
 }));
 
 app.options('*', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://tu-frontend.com');
+  res.setHeader('Access-Control-Allow-Origin', 'https://food-delivery-frontend-virid.vercel.app');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS','DELETE','PUT');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.status(200).send();
