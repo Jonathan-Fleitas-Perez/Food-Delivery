@@ -15,31 +15,31 @@ const app = express();
 const port = process.env.PORT || 4000; // Cambié process.env.process por process.env.PORT
 
 const allowedOrigins = [
-  'food-delivery-frontend-virid.vercel.app',
-  'food-delivery-ruby-alpha.vercel.app',
+  'https://food-delivery-frontend-virid.vercel.app',
+  'https://food-delivery-ruby-alpha.vercel.app',
   'http://localhost:5173', // Para desarrollo local
   'http://localhost:5174'
 ];
 
-// Middlewares
-app.use(express.json());
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Origen no permitido por CORS'));
+      callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true // Si usas cookies o autenticación
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'token'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
 
-app.options('*', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://food-delivery-frontend-virid.vercel.app');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS','DELETE','PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.status(200).send();
-});
+// Middlewares
+app.use(express.json());
+app.use(cors(corsOptions));
+
+app.options('*', cors(corsOptions));
 
 // API endpoints
 app.use('/api/user', userRouter);
