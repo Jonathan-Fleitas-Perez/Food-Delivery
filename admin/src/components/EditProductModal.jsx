@@ -112,7 +112,7 @@ const EditProductModal = ({ product, token, onClose, onProductUpdated }) => {
         {
           headers: {
             'Content-Type': 'multipart/form-data',
-            token
+            Authorization:`Bearer ${token}`
           }
         }
       );

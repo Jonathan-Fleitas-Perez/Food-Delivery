@@ -5,115 +5,169 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import Tittle from '../components/Tittle'
 import Footer from '../components/Footer'
+import StatusBadge from '../components/StatusBadge'; // Asegúrate de importar este componente
 
 const Orders = () => {
+  const { backendUrl, token, currency } = useContext(ShopConstest)
+  const [orderData, setOrderData] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const {backendUrl,token,currency} = useContext(ShopConstest)
-  const [orderData,setOrderData] = useState([])
-
-  const loadOrderData = async()=>{
+  const loadOrderData = async () => {
     try {
-      if(!token) return null
-      const response = await axios.post(backendUrl+'/api/order/userorders',{},{headers:{token}})
+      setIsLoading(true)
+      if (!token) {
+        toast.info('Por favor inicia sesión para ver tus órdenes')
+        return
+      }
       
-      if(response.data.success){
-        let allOrderItem = []
-
-        response.data.orders.map((order)=>{
-          order.items.map((item)=>{
-            item['status']=order.status
-            item['payment']=order.payment
-            item['paymentMethod']=order.paymentMethod
-            item['date']=order.date
-            allOrderItem.push(item)
+      const response = await axios.post(`${backendUrl}/api/order/userorders`,
+        {},
+        { headers: {Authorization:`Bearer ${token}`} })
+      
+      if (response.data.success && response.data.orders) {
+        const processedOrders = response.data.orders.map(order => ({
+          ...order,
+          date: new Date(order.date).toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
           })
-        })
-        setOrderData(allOrderItem.reverse())
-      }     
+        }))
+        
+        setOrderData(processedOrders.reverse())
+      } else {
+        toast.error(response.data.message || 'Error al cargar las órdenes')
+      }
     } catch (error) {
-      console.log('Error al cargar las ordenes del cliente desde el frontend: ',error)
-      toast.error('Error al obtener las ordenes del cliente')
+      console.error('Error al cargar las ordenes:', error)
+      toast.error(error.response?.data?.message || 'Error al obtener las órdenes')
+    } finally {
+      setIsLoading(false)
     }
   }
 
-
-  useEffect(()=>{
+  useEffect(() => {
     loadOrderData()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[token])
+  }, [token])
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Delivered': return 'bg-green-100 text-green-800';
+      case 'Cancelled': return 'bg-red-100 text-red-800';
+      case 'Processing': 
+      case 'Packing': 
+      case 'Shipped': 
+        return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-blue-100 text-blue-800';
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <section className='mt-24 max-padd-container'>
+        <div className='pt-6 pb-20'>
+          <Tittle title1={'Order'} title2={'List'} paraStyle={'h3'} />
+          <div className="flex justify-center py-10">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (!orderData || orderData.length === 0) {
+    return (
+      <section className='mt-24 max-padd-container'>
+        <div className='pt-6 pb-20'>
+          <Tittle title1={'Order'} title2={'List'} paraStyle={'h3'} />
+          <div className="text-center py-10">
+            <p className="text-gray-500 text-lg">No tienes órdenes registradas</p>
+            <button 
+              onClick={loadOrderData}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Recargar
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </section>
+    )
+  }
 
   return (
     <section className='mt-24 max-padd-container'>
       <div className='pt-6 pb-20'>
-        {/*Tittle*/}
-        <Tittle title1={'Order'} title2={'List'} paraStyle={'h3'}/>
+        <Tittle title1={'Order'} title2={'List'} paraStyle={'h3'} />
 
-        {/*Container*/}
-        {orderData.map((item,i)=>(
-          <div key={i} className='p-2 mt-2 bg-white rounded-xl'>
+        {orderData.map((order, i) => (
+          <div key={i} className='p-4 mt-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow'>
             <div className='flex flex-col gap-4 text-gray-700'>
-              <div className='flex w-full gap-x-3'>
-                {/*Image*/}
-                <div className='hidden rounded xl:block ring-1 ring-slate-900/5 p-7 bg-primary'>
-                    <TfiPackage className='text-3xl text-secondary' />
+              <div className='flex justify-between items-center border-b pb-2'>
+                <div>
+                  <h5 className='font-semibold'>Orden #: {order._id.slice(-8).toUpperCase()}</h5>
+                  <p className='text-sm text-gray-500'>Fecha: {order.date}</p>
                 </div>
+                <div className="flex items-center gap-2">
+                  <StatusBadge 
+                    status={order.status} 
+                    customClass={getStatusColor(order.status)}
+                  />
+                  <p className='text-sm font-medium'>{order.paymentMethod}</p>
+                </div>
+              </div>
 
-                {/*Order Info*/}
-                <div className='block w-full'>
-                  <h5 className='capitalize h5 line-clamp-1'>{item.name}</h5>
-                  <div className='flex gap-x-2 sm:flex-row sm:justify-between'>
-                    <div className='text-xs'>
-                      <div className='flex items-center gap-x-2 sm:gap-x-3'>
-                      <div className='flexCenter gap-x-2'>
-                          <h5 className='medium-14' >Price:</h5>
-                          <p>{currency} {item.price[item.size]}</p>
-                        </div>
-                        
-                        <div className='flexCenter gap-x-2'>
-                          <h5 className='medium-14' >Quantity:</h5>
-                          <p>{item.quantity}</p>
-                        </div>
-                        
-                        <div className='flexCenter gap-x-2'>
-                          <h5 className='medium-14' >Size:</h5>
-                          <p>{item.size}</p>
-                        </div>
-
-                         <div className='flexCenter gap-x-2'>
-                          <h5 className='medium-14' >Name:</h5>
-                          <p>{item.name}</p>
-                        </div>
+              {order.items.map((item, j) => (
+                <div key={j} className='flex gap-4 py-2 border-b'>
+                  <div className='flex-shrink-0'>
+                    <TfiPackage className='text-2xl text-blue-500' />
+                  </div>
+                  
+                  <div className='flex-1'>
+                    <h6 className='font-medium line-clamp-1'>{item.name}</h6>
+                    <div className='grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1 text-sm'>
+                      <div>
+                        <span className='text-gray-500'>Precio:</span>
+                        <span className='ml-1 font-medium'>{currency} {item.price.toFixed(2)}</span>
                       </div>
-
-                      <div className='flex items-center gap-x-2'>
-                        <h5 className='medium-14'>Date:</h5>
-                        <p className='text-gray-400'>{new Date(item.date).toString()}</p>
+                      <div>
+                        <span className='text-gray-500'>Cantidad:</span>
+                        <span className='ml-1 font-medium'>{item.quantity}</span>
                       </div>
-                      <div className='flex items-center gap-x-2'>
-                        <h5 className='medium-14'>Payment:</h5>
-                        <p className='text-gray-400'>{item.paymentMethod}</p>
+                      <div>
+                        <span className='text-gray-500'>Tamaño:</span>
+                        <span className='ml-1 font-medium'>{item.size}</span>
                       </div>
-                    </div>
-
-                    {/*Status and button*/}
-                    <div className='flex flex-col gap-2 sm:pr-4'>
-                      <div className='flex items-center gap-2'>
-                        <p className='h-2 bg-green-500 rounded-full min-w-2'></p>
-                        <p className='max-sm:text-xs'>{item.status}</p>
+                      <div>
+                        <span className='text-gray-500'>Total:</span>
+                        <span className='ml-1 font-medium'>
+                          {currency} {(item.price * item.quantity).toFixed(2)}
+                        </span>
                       </div>
-                      <button onClick={loadOrderData} className='btn-secondary !p-1 !px-3 !text-xs'>Track Order</button>
                     </div>
                   </div>
                 </div>
+              ))}
 
+              <div className='flex justify-between items-center pt-2'>
+                <div className='text-sm'>
+                  <p className='font-medium'>Dirección:</p>
+                  <p className='text-gray-600'>
+                    {order.address.street}, {order.address.city}, {order.address.country}
+                  </p>
+                </div>
+                <div className='text-right'>
+                  <p className='text-sm text-gray-500'>Total de la orden:</p>
+                  <p className='text-lg font-bold'>{currency} {order.amount.toFixed(2)}</p>
+                </div>
               </div>
             </div>
           </div>
         ))}
       </div>
-
-      <Footer/>
+      <Footer />
     </section>
   )
 }

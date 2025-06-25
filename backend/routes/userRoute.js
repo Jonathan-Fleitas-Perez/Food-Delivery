@@ -1,10 +1,45 @@
-import express from "express"
-import { adminLogin, loginUser, registerUser } from "../controllers/userController.js";
+import express from 'express';
+import { 
+  createUserByAdmin,
+  getAllUsers,
+  deleteUser,
+  loginUser,
+  updateUserByAdmin,
+  registerUser
+} from '../controllers/userController.js';
+import { authenticateUser, canCreateUsers, canDeleteUsers, canReadUsers, canUpdateUsers, checkPermission } from '../middleware/authMiddleware.js';
 
-const userRouter = express.Router();
+const UserRouter = express.Router();
 
-userRouter.post('/register',registerUser);
-userRouter.post('/login',loginUser);
-userRouter.post('/admin',adminLogin);
+// 1. Ruta pública para login
+UserRouter.post('/login', loginUser);
+UserRouter.post('/register',registerUser)
 
-export default userRouter;
+// Rutas específicas con permisos
+UserRouter.get('/list',
+  authenticateUser, 
+  canReadUsers,
+  getAllUsers
+);
+
+
+
+UserRouter.post('/createUser',
+  authenticateUser, 
+  canCreateUsers,
+  createUserByAdmin
+);
+
+UserRouter.put('/:id', 
+  authenticateUser,
+  canUpdateUsers,
+  updateUserByAdmin
+);
+
+UserRouter.delete('/:id', 
+  authenticateUser,
+  canDeleteUsers,
+  deleteUser
+);
+
+export default UserRouter;

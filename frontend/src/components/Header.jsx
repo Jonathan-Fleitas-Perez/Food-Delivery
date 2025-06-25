@@ -9,13 +9,12 @@ import { ShopConstest } from "../context/ShopContext";
 
 const Header = () => {
   const [menuOpened, setMenuOpened] = useState(false);
-  const {token,navigate,getCartCount,setToken}= useContext(ShopConstest)
+  const {token,navigate,getCartCount}= useContext(ShopConstest)
   
 
   const logout = () => {
+    localStorage.removeItem('user')
     navigate('/login')
-    localStorage.removeItem('token')
-    setToken('')
   }
   const toggleMenu = ()=>{setMenuOpened((prev)=> !prev);} //Funcion para abrir y cerrar el menu lateral en mobile
 
@@ -53,7 +52,7 @@ const Header = () => {
               <ul className="bg-white shadow-sm p-2 ww-32 ring-1 ring-slate-900/15 rounded absolute right-0 top-10 hidden group-hover:flex flex-col">
                 <li className="flexBetween cursor-pointer" onClick={()=>navigate('/orders')}><p>Orders </p> <TbArrowNarrowRight className="opacity-50 text-[19px]"/></li>
                 <hr  className="my-2"/>
-                <li className="flexBetween cursor-pointer" onClick={()=>logout}><p>Logout </p> <TbArrowNarrowRight className="opacity-50 text-[19px]"/></li>
+                <li className="flexBetween cursor-pointer" onClick={()=>logout()}><p>Logout </p> <TbArrowNarrowRight className="opacity-50 text-[19px]"/></li>
               </ul>
             </>}
           </div>

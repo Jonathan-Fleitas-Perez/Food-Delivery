@@ -61,6 +61,20 @@ export const validateSchema = (schema) => async (req, res, next) => {
   }
 };
 
+// Middleware para verificar permisos en controlador
+const checkControllerPermission = (resource, action) => (req, res, next) => {
+  const requiredPermission = `${resource}:${action}`;
+  
+  if (!req.user?.permissions?.includes(requiredPermission)) {
+    return res.status(403).json({
+      success: false,
+      message: `No tienes permiso para ${action} productos`
+    });
+  }
+  
+  next();
+};
+
 // Middleware para manejo de operaciones de base de datos
 const handleDBOperation = (operation) => async (req, res) => {
     try {
@@ -99,8 +113,9 @@ const handleDBOperation = (operation) => async (req, res) => {
 
 
 // Controlador para añadir producto
-// backend/controllers/productController.js
-export const addProduct = 
+
+export const addProduct =[
+    checkControllerPermission('products', 'create'), 
     handleDBOperation(async (req) => {
         const { name, description, category, prices, popular } = req.body;
         const file = req.file;
@@ -172,7 +187,7 @@ export const addProduct =
             message: 'Producto creado exitosamente',
             product: product.toObject()
         };
-    });
+    })];
 // Listar TODOS los productos (sin paginación)
 export const listAllProducts = handleDBOperation(async () => {
   try {

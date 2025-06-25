@@ -97,8 +97,11 @@ price: {
       },
       message: 'Debe tener al menos un tamaño válido (small, medium, large)'
     }
-  },
-  
+  }, 
+   salesCount: {
+    type: Number,
+    default: 0
+  },  
   popular: {
     type: Boolean,
     default: false

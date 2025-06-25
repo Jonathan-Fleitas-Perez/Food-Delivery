@@ -2,11 +2,13 @@ import axios from 'axios';
 import { useEffect, useState, useCallback } from 'react';
 import { backendUrl, currency } from '../App';
 import { toast } from 'react-toastify';
-import { TbTrash, TbEdit, TbFilter, TbSearch } from 'react-icons/tb';
+import { TbTrash, TbEdit, TbFilter, TbSearch, TbChevronLeft, TbChevronRight } from 'react-icons/tb';
 import EditProductModal from '../components/EditProductModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import { LazyLoadImage } from 'react-lazy-load-image-component';
+import 'react-lazy-load-image-component/src/effects/blur.css';
 
-const List = ({ token }) => {
+const List = ({ token, permissions }) => {
   const [list, setList] = useState([]);
   const [filteredList, setFilteredList] = useState([]);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -25,7 +27,59 @@ const List = ({ token }) => {
   const [sortOption, setSortOption] = useState('name-asc');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [mobileView, setMobileView] = useState(false);
+  
+  const canReadProducts = permissions.includes('products:read');
+  const canUpdateProducts = permissions.includes('products:update');
+  const canDeleteProducts = permissions.includes('products:delete');
+
   const itemsPerPage = 10;
+
+  // Componente Skeleton para filas
+  const SkeletonRow = ({ isMobile = false }) => (
+    isMobile ? (
+      <div className="flex flex-col gap-3 p-4 bg-white shadow-sm rounded-xl animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="w-16 h-16 bg-gray-200 rounded-xl"></div>
+          <div className="flex-1">
+            <div className="w-3/4 h-4 mb-2 bg-gray-200 rounded"></div>
+            <div className="w-1/2 h-3 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+        <div className="flex justify-between">
+          <div className="w-1/4 h-3 bg-gray-200 rounded"></div>
+          <div className="flex gap-2">
+            <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+            <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div className="grid grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr] items-center gap-2 p-1 bg-white rounded-xl animate-pulse">
+        <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
+        <div className="h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded"></div>
+        <div className="flex items-center justify-center">
+          <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
+        </div>
+        <div className="flex items-center justify-center">
+          <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
+        </div>
+      </div>
+    )
+  );
+
+  // Verificar tamaño de pantalla
+  useEffect(() => {
+    const checkMobile = () => {
+      setMobileView(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const fetchList = useCallback(async () => {
     setIsLoading(true);
@@ -118,8 +172,6 @@ const List = ({ token }) => {
         headers: { token }
       });
       
-      console.log('Detalles del producto:', response.data);
-      
       if (response.data.success) {
         setEditingProduct(response.data.product);
         setIsModalOpen(true);
@@ -153,14 +205,12 @@ const List = ({ token }) => {
     try {
       const response = await axios.delete(
         `${backendUrl}/api/product/${id}`,
-        { headers: { token } }
+        { headers: {Authorization:`Bearer ${token}`} }
       );
 
       if (response.data.success) {
         toast.success('Producto eliminado correctamente');
-        
-        // Actualizar lista completa desde el servidor
-        await fetchList();
+        fetchList();
       } else {
         toast.error(response.data.message);
       }
@@ -195,8 +245,21 @@ const List = ({ token }) => {
     fetchList();
   }, [fetchList]);
 
+  if (!canReadProducts) {
+    return (
+      <div className="flex items-center justify-center h-full p-4">
+        <div className="max-w-md p-6 text-center bg-white rounded-lg shadow-lg">
+          <h2 className="text-xl font-bold text-red-600">Acceso no autorizado</h2>
+          <p className="mt-3 text-gray-700">
+            No tienes permiso para ver la lista de productos.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className='px-2 sm:px-8'>
+    <div className='px-2 sm:px-4 md:px-6 lg:px-8'>
       {isModalOpen && editingProduct && (
         <EditProductModal
           product={editingProduct}
@@ -215,14 +278,14 @@ const List = ({ token }) => {
       />
 
       <div className='flex flex-col gap-4 mb-4'>
-        <h1 className='text-xl font-bold'>Lista de Productos</h1>
+        <h1 className='text-xl font-bold md:text-2xl'>Lista de Productos</h1>
         
         {/* Barra de búsqueda y filtros */}
         <div className='flex flex-col gap-3 p-3 bg-white rounded-lg shadow-sm'>
-          <div className='flex items-center gap-2'>
+          <div className='flex flex-col gap-3 md:flex-row md:items-center'>
             <button 
               onClick={() => setShowFilters(!showFilters)}
-              className='flex items-center gap-1 px-3 py-2 transition-colors bg-gray-100 rounded-md hover:bg-gray-200'
+              className='flex items-center justify-center gap-1 px-3 py-2 transition-colors bg-gray-100 rounded-md hover:bg-gray-200 md:w-auto'
             >
               <TbFilter className='text-gray-700' />
               <span>Filtros</span>
@@ -331,29 +394,33 @@ const List = ({ token }) => {
       </div>
 
       <div className='flex flex-col gap-2'>
-        <div className='grid grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr] items-center py-1 px-2 bg-white bold-14 sm:bold-15 rounded'>
-          <h5>Imagen</h5>
-          <h5>Nombre</h5>
-          <h5>Categoría</h5>
-          <h5>Precio</h5>
-          <h5>Editar</h5>
-          <h5>Eliminar</h5>
-        </div>
+        {/* Encabezado solo para escritorio */}
+        {!mobileView && (
+          <div className='hidden md:grid grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr] items-center py-1 px-2 bg-white bold-14 sm:bold-15 rounded'>
+            <h5>Imagen</h5>
+            <h5>Nombre</h5>
+            <h5>Categoría</h5>
+            <h5>Precio</h5>
+            {canUpdateProducts && <h5>Editar</h5>}
+            {canDeleteProducts && <h5>Eliminar</h5>}
+          </div>
+        )}
 
         {isLoading ? (
-          <div className='flex justify-center py-8'>
-            <div className='w-8 h-8 border-t-2 border-blue-500 rounded-full animate-spin'></div>
-          </div>
+          // Mostrar skeletons durante la carga
+          [...Array(5)].map((_, index) => (
+            <SkeletonRow key={index} isMobile={mobileView} />
+          ))
         ) : filteredList.length === 0 ? (
-          <div className='py-4 text-center bg-white rounded-lg'>
-            <p>No se encontraron productos</p>
+          <div className='py-8 text-center bg-white rounded-lg shadow-sm'>
+            <p className='text-gray-600'>No se encontraron productos</p>
             <button 
               onClick={() => {
                 setSearchTerm('');
                 setSelectedCategory('all');
                 setPage(1);
               }}
-              className='px-4 py-2 mt-2 text-white bg-blue-500 rounded-md hover:bg-blue-600'
+              className='px-4 py-2 mt-4 text-white bg-blue-500 rounded-md hover:bg-blue-600'
             >
               Limpiar filtros
             </button>
@@ -361,79 +428,178 @@ const List = ({ token }) => {
         ) : (
           <>
             {filteredList.map((item) => (
-              <div key={item._id} className='grid grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr] items-center gap-2 p-1 bg-white rounded-xl'>
-                <img 
-                  src={item.image} 
-                  alt={item.name} 
-                  className='object-cover w-12 h-12 rounded-xl'
-                />
-                <h5 className='text-sm font-semibold'>{item.name}</h5>
-                <p className='font-semibold'>{item.category}</p>
-                <div className='text-sm font-semibold'>
-                  {formatPrice(getMinPrice(item.price))}
-                </div>
-                <div>
-                  {isFetchingDetails[item._id] ? (
-                    <div className='w-5 h-5 border-t-2 border-blue-500 rounded-full animate-spin'></div>
-                  ) : (
-                    <TbEdit 
-                      onClick={() => fetchProductDetails(item._id)} 
-                      className='text-lg text-blue-500 cursor-pointer hover:text-blue-700'
+              mobileView ? (
+                // Vista para móviles
+                <div key={item._id} className='flex flex-col gap-3 p-4 bg-white shadow-sm rounded-xl'>
+                  <div className='flex items-center gap-3'>
+                    <LazyLoadImage
+                      src={item.image} 
+                      alt={item.name} 
+                      className='object-cover w-16 h-16 rounded-xl'
+                      effect="blur"
+                      placeholderSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24'%3E%3Crect width='100%25' height='100%25' fill='%23e5e7eb'/%3E%3C/svg%3E"
+                      wrapperClassName="w-16 h-16 rounded-xl"
                     />
+                    <div>
+                      <h5 className='text-base font-semibold'>{item.name}</h5>
+                      <p className='text-sm text-gray-500'>{item.category}</p>
+                    </div>
+                  </div>
+                  
+                  <div className='flex items-center justify-between'>
+                    <div className='text-base font-semibold'>
+                      {formatPrice(getMinPrice(item.price))}
+                    </div>
+                    
+                    <div className='flex gap-2'>
+                      {canUpdateProducts && (
+                        <div>
+                          {isFetchingDetails[item._id] ? (
+                            <div className='w-5 h-5 border-t-2 border-blue-500 rounded-full animate-spin'></div>
+                          ) : (
+                            <button 
+                              onClick={() => fetchProductDetails(item._id)}
+                              className="p-2 text-blue-500 rounded-full bg-blue-50 hover:bg-blue-100"
+                              title="Editar"
+                            >
+                              <TbEdit className='text-lg' />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      
+                      {canDeleteProducts && (
+                        <div>
+                          {isDeleting[item._id] ? (
+                            <div className='w-5 h-5 border-t-2 border-red-500 rounded-full animate-spin'></div>
+                          ) : (
+                            <button 
+                              onClick={() => openDeleteConfirmation(item._id)}
+                              className="p-2 text-red-500 rounded-full bg-red-50 hover:bg-red-100"
+                              title="Eliminar"
+                            >
+                              <TbTrash className='text-lg' />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Vista para escritorio
+                <div key={item._id} className='grid grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr] items-center gap-2 p-1 bg-white rounded-xl'>
+                  <LazyLoadImage
+                    src={item.image} 
+                    alt={item.name} 
+                    className='object-cover w-12 h-12 rounded-xl'
+                    effect="blur"
+                    placeholderSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24'%3E%3Crect width='100%25' height='100%25' fill='%23e5e7eb'/%3E%3C/svg%3E"
+                    wrapperClassName="w-12 h-12 rounded-xl"
+                  />
+                  <h5 className='text-sm font-semibold'>{item.name}</h5>
+                  <p className='font-semibold'>{item.category}</p>
+                  <div className='text-sm font-semibold'>
+                    {formatPrice(getMinPrice(item.price))}
+                  </div>
+
+                  {canUpdateProducts && (
+                    <div className='flex justify-center'>
+                      {isFetchingDetails[item._id] ? (
+                        <div className='w-5 h-5 border-t-2 border-blue-500 rounded-full animate-spin'></div>
+                      ) : (
+                        <TbEdit 
+                          onClick={() => fetchProductDetails(item._id)} 
+                          className='text-lg text-blue-500 cursor-pointer hover:text-blue-700'
+                        />
+                      )}
+                    </div>
+                  )}
+                  
+                  {canDeleteProducts && (
+                    <div className='flex justify-center'>
+                      {isDeleting[item._id] ? (
+                        <div className='w-5 h-5 border-t-2 border-red-500 rounded-full animate-spin'></div>
+                      ) : (
+                        <TbTrash 
+                          onClick={() => openDeleteConfirmation(item._id)} 
+                          className='text-lg text-red-500 cursor-pointer hover:text-red-700'
+                        />
+                      )}
+                    </div>
                   )}
                 </div>
-                <div>
-                  {isDeleting[item._id] ? (
-                    <div className='w-5 h-5 border-t-2 border-red-500 rounded-full animate-spin'></div>
-                  ) : (
-                    <TbTrash 
-                      onClick={() => openDeleteConfirmation(item._id)} 
-                      className='text-lg text-red-500 cursor-pointer hover:text-red-700'
-                    />
-                  )}
-                </div>
-              </div>
+              )
             ))}
 
             {/* Paginación */}
             {totalPages > 1 && (
-              <div className='flex justify-center gap-2 mt-4'>
+              <div className='flex flex-wrap items-center justify-between gap-4 mt-6'>
                 <button
                   onClick={() => setPage(prev => Math.max(prev - 1, 1))}
                   disabled={page === 1}
-                  className={`px-4 py-2 rounded-md ${
+                  className={`flex items-center gap-1 px-3 py-2 rounded-md ${
                     page === 1 
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                      : 'bg-gray-200 hover:bg-gray-300'
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-gray-100 hover:bg-gray-200'
                   }`}
                 >
-                  Anterior
+                  <TbChevronLeft className='text-lg' />
+                  <span>Anterior</span>
                 </button>
                 
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                  <button
-                    key={pageNum}
-                    onClick={() => setPage(pageNum)}
-                    className={`px-3 py-1 rounded-md ${
-                      page === pageNum 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-200 hover:bg-gray-300'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                ))}
+                <div className='flex items-center gap-1'>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = 
+                      totalPages <= 5 ? i + 1 : 
+                      page <= 3 ? i + 1 : 
+                      page >= totalPages - 2 ? i + (totalPages - 4) : 
+                      i + (page - 2);
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          page === pageNum 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-gray-100 hover:bg-gray-200'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  {totalPages > 5 && page < totalPages - 2 && (
+                    <span className="px-2">...</span>
+                  )}
+                  
+                  {totalPages > 5 && page < totalPages - 2 && (
+                    <button
+                      onClick={() => setPage(totalPages)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        page === totalPages 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-gray-100 hover:bg-gray-200'
+                      }`}
+                    >
+                      {totalPages}
+                    </button>
+                  )}
+                </div>
                 
                 <button
                   onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={page === totalPages}
-                  className={`px-4 py-2 rounded-md ${
+                  className={`flex items-center gap-1 px-3 py-2 rounded-md ${
                     page === totalPages 
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                      : 'bg-gray-200 hover:bg-gray-300'
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-gray-100 hover:bg-gray-200'
                   }`}
                 >
-                  Siguiente
+                  <span>Siguiente</span>
+                  <TbChevronRight className='text-lg' />
                 </button>
               </div>
             )}

@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 import { z } from 'zod';
 
 const PlaceOrder = () => {
-  const { navigate, backendUrl, cartItems, setCartItems, getCartAmount, foods, token } = useContext(ShopConstest);
+  const { navigate, backendUrl, cartItems, setCartItems, user, foods, token } = useContext(ShopConstest);
   const [method, setMethod] = useState('cod');
   const [formData, setFormData] = useState({
     firstName: '',
@@ -69,94 +69,100 @@ const PlaceOrder = () => {
     }
   };
 
-  const onSubmitHandler = async (event) => {
-    event.preventDefault();
+ const onSubmitHandler = async (event) => {
+  event.preventDefault();
+  
+  // Validar formulario
+  if (!validateForm()) {
+    toast.error('Por favor complete todos los campos correctamente');
+    return;
+  }
+  
+  setIsSubmitting(true);
+
+  try {
+    let orderItems = [];
+    let totalAmount = 0;  // Calcular el monto total
     
-    // Validar formulario
-    if (!validateForm()) {
-      toast.error('Por favor complete todos los campos correctamente');
+    for (const [itemId, sizes] of Object.entries(cartItems)) {
+      for (const [size, quantity] of Object.entries(sizes)) {
+        if (quantity > 0) {
+          const itemInfo = foods.find(food => food._id === itemId);
+          if (itemInfo) {
+            // Obtener el precio correcto para el tamaño seleccionado
+            const price = typeof itemInfo.price === 'object' 
+              ? itemInfo.price[size] 
+              : itemInfo.price;
+            
+            totalAmount += price * quantity;
+            
+            orderItems.push({
+              name: itemInfo.name,
+              size,
+              quantity,
+              price: Number(price)  // Asegurar que sea número
+            });
+          }
+        }
+      }
+    }
+
+    // Validar que hay al menos un ítem en el carrito
+    if (orderItems.length === 0) {
+      toast.error('El carrito está vacío');
+      setIsSubmitting(false);
       return;
     }
+
+    // Redondear a 2 decimales para evitar problemas de precisión
+    totalAmount = Number(totalAmount.toFixed(2));
     
-    setIsSubmitting(true);
+    const orderData = {
+      userId: user.id,  // Asegúrate de tener el user del contexto
+      address: formData,
+      items: orderItems,
+      amount: totalAmount,
+      paymentMethod: method === 'cod' ? 'COD' : 'Stripe'  // Agregar paymentMethod
+    };
 
-    try {
-      let orderItems = [];
+    const endpoint = method === 'cod' 
+      ? '/api/order/place' 
+      : '/api/order/stripe';
+
+    const response = await axios.post(
+      backendUrl + endpoint, 
+      orderData, 
+      { headers: { token } }
+    );
+    
+    if (response.data.success) {
+      setCartItems({});
       
-      // Optimizado: Usar Object.entries para iterar más eficientemente
-      for (const [itemId, sizes] of Object.entries(cartItems)) {
-        for (const [size, quantity] of Object.entries(sizes)) {
-          if (quantity > 0) {
-            const itemInfo = foods.find(food => food._id === itemId);
-            if (itemInfo) {
-              // Crear copia superficial en lugar de estructurada (mejor performance)
-              orderItems.push({
-                ...itemInfo,
-                size,
-                quantity
-              });
-            }
-          }
-        }
+      if (method === 'cod') {
+        toast.success('¡Orden creada con éxito!');
+        navigate('/orders');
+      } else {
+        const { session_url } = response.data;
+        window.location.replace(session_url);
       }
-
-      // Validar que hay al menos un ítem en el carrito
-      if (orderItems.length === 0) {
-        toast.error('El carrito está vacío');
-        setIsSubmitting(false);
-        return;
-      }
-
-      const orderData = {
-        address: formData,
-        items: orderItems,
-        amount: Number(getCartAmount())
-      };
-
-      switch (method) {
-        case 'cod': {
-          const response = await axios.post(
-            backendUrl + '/api/order/place', 
-            orderData, 
-            { headers: { token } }
-          );
-          
-          if (response.data.success) {
-            setCartItems({});
-            toast.success('¡Orden creada con éxito!');
-            navigate('/orders');
-          } else {
-            toast.error(response.data.message);
-          }
-          break;
-        }
-
-        case 'stripe': {
-          const responseStripe = await axios.post(
-            backendUrl + '/api/order/stripe', 
-            orderData, 
-            { headers: { token } }
-          );
-          
-          if (responseStripe.data.success) {
-            const { session_url } = responseStripe.data;
-            window.location.replace(session_url);
-          } else {
-            toast.error(responseStripe.data.message);
-          }
-          break;
-        }
-
-        default:
-          break;
-      }
-    } catch (error) {
-      console.error('Error al crear la orden:', error);
-      toast.error(error.response?.data?.message || 'Error al procesar la orden');
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      toast.error(response.data.message);
     }
-  };
+  } catch (error) {
+    console.error('Error al crear la orden:', error);
+    
+    // Mostrar detalles del error de validación
+    if (error.response?.data?.errors) {
+      error.response.data.errors.forEach(err => {
+        toast.error(`${err.field}: ${err.message}`);
+      });
+    } else {
+      toast.error(error.response?.data?.message || 'Error al procesar la orden');
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // Función para obtener clase de error
   const getInputClass = (fieldName) => {

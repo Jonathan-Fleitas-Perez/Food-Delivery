@@ -1,99 +1,184 @@
-import React, { useContext, useEffect, useState } from 'react'
-import loginImg from '../assets/Login.png'
-import { ShopConstest } from '../context/ShopContext'
-import axios from 'axios'
-import { toast } from 'react-toastify'
+import { useContext, useEffect, useState } from 'react';
+import loginImg from '../assets/Login.png';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { ShopConstest} from '../context/ShopContext';
+import { backendUrl } from '../../../admin/src/App';
 
 const Login = () => {
-  const [currState, setcurrState] = useState('Login')
-  const {token,setToken,navigate,backendUrl} = useContext(ShopConstest)
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const { login, user } = useContext(ShopConstest);
+  const navigate = useNavigate();
 
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-
-  const onSubmitHandler = async(event)=>{
-    event.preventDefault()
-    try {
-      if(currState ==='Sign Up'){
-        const response = await axios.post(backendUrl+'/api/user/register',{name,email,password})
-        if(response.data.success){
-          setToken(response.data.token)
-          localStorage.setItem('token',response.data.token)
-        }else
-          toast.error(response.data.message)
-
-      }else{
-        const response = await axios.post(backendUrl+'/api/user/login',{email,password})
-        if(response.data.success){
-          setToken(response.data.token)
-          localStorage.setItem('token',response.data.token)
-        }else
-          toast.error(response.data.message)
-      }
-
-    } catch (error) {
-      console.log(error)
-      toast.error(error.message)
+  // Validar formulario antes de enviar
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!email.trim()) {
+      newErrors.email = 'El email es obligatorio';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Email inválido';
     }
-  }
+    
+    if (!password) {
+      newErrors.password = 'La contraseña es obligatoria';
+    } else if (password.length < 6) {
+      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
+  const onSubmitHandler = async (e) => {
+    try {
+      e.preventDefault();
+      
+      // Validar formulario
+      if (!validateForm()) return;
+      
+      setIsLoading(true);
+      const response = await axios.post(`${backendUrl}/api/user/login`, { email, password });
+      
+      if (response.data.success) {
+        const token = response.data.token;
+        login(token);
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      
+      // Manejar errores específicos
+      if (error.response) {
+        const { status, data } = error.response;
+        if (status === 401) {
+          toast.error('Credenciales inválidas');
+        } else if (status === 403) {
+          toast.error('Acceso denegado');
+        } else {
+          toast.error(data.message || 'Error en el inicio de sesión');
+        }
+      } else {
+        toast.error('Error de conexión con el servidor');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  useEffect(()=>{
-    if(token)
-      navigate('/')
-  },[token])
+  // Si el usuario está autenticado, redirigir a la página principal
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
   return (
-    <section className='absolute top-0 left-0 h-full w-full z-50 bg-white'>
-      {/* Container */}
-      <div className='flex h-full w-full'>
-        {/* Image side */}
-        <div className='w-1/2 hidden sm:block'>
-          <img src={loginImg} alt="Tabla de comida" className='object-cover aspect-square h-full w-full'/>
+    <section className='absolute top-0 left-0 z-50 w-full h-full bg-white'>
+      {/*Container */}
+      <div className='flex w-full h-full'>
+        {/* Image a la derecha*/}
+        <div className='hidden w-1/2 sm:block'>
+          <img src={loginImg} alt="Image Login" className='object-cover w-full h-full' />
         </div>
 
-        {/* Form Side */}
-        <div className='flex w-full sm:w-1/2 items-center justify-center'>
+        {/*Form side */}
+        <div className='w-full flexCenter sm:w-1/2'>
           <form onSubmit={onSubmitHandler} className='flex flex-col items-center w-[90%] sm:max-w-md m-auto gap-y-5 text-gray-800'>
-            <div className='w-full mb-4'>
-              <h3 className='bold-36'>{currState}</h3>
+            <div className='w-full mb-4 text-center'>
+              <h3 className='text-gray-900 bold-36'>Panel de Administración</h3>
+              <p className='mt-2 text-gray-600 medium-15'>Ingrese sus credenciales para acceder</p>
             </div>
-            {currState === 'Sign Up'&&(
-              <div className='w-full'>
-                <label htmlFor="name" className='medium-14'>Name</label>
-                <input onChange={(e)=>setName(e.target.value)} value={name} type="text" placeholder='Name' className='w-full px-3 py-1 ring-slate-900/10 rounded bg-primary mt-1' />
+            
+            <div className='w-full'>
+              <label htmlFor="email" className='block mb-1 medium-15'>Email</label>
+              <input 
+                type="email" 
+                onChange={(e) => setEmail(e.target.value)} 
+                value={email} 
+                placeholder='tu@email.com' 
+                className={`w-full px-4 py-2 ring-1 ring-slate-900/10 rounded bg-white mt-1 ${
+                  errors.email ? 'ring-red-500 focus:ring-red-500' : 'focus:ring-blue-500'
+                }`}
+                disabled={isLoading}
+              />
+              {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
+            </div>
+
+            <div className='w-full'>
+              <label htmlFor="password" className='block mb-1 medium-15'>Contraseña</label>
+              <div className="relative">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  value={password} 
+                  placeholder='••••••••' 
+                  className={`w-full px-4 py-2 ring-1 ring-slate-900/10 rounded bg-white mt-1 pr-10 ${
+                    errors.password ? 'ring-red-500 focus:ring-red-500' : 'focus:ring-blue-500'
+                  }`}
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  className="absolute text-gray-500 transform -translate-y-1/2 right-3 top-1/2 hover:text-gray-700"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
               </div>
-            )}
-
-            <div className='w-full'>
-              <label htmlFor="email" className='medium-14'>Email</label>
-              <input onChange={(e)=>setEmail(e.target.value)} value={email} type="email" placeholder='Email' className='w-full px-3 py-1 ring-slate-900/10 rounded bg-primary mt-1' />
-            </div>
-            <div className='w-full'>
-              <label htmlFor="password" className='medium-14'>Password</label>
-              <input onChange={(e)=>setPassword(e.target.value)} value={password} type="password" placeholder='Password' className='w-full px-3 py-1 ring-slate-900/10 rounded bg-primary mt-1' />
+              {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
             </div>
 
-            <button type='submit' className='btn-dark w-full mt-5 !py-[7px] !rounded'>{currState === 'Sign Up'?'Sign Up':'Login'}</button>
-            <div className='w-full flex flex-col gap-y-3 medium-14'>
-              <div className='underline'>Forgort your password?</div>
-              {currState === 'Login'?(
-                <div className='underline'>
-                  Don't have acount?
-                  <span onClick={()=>setcurrState('Sign Up')} className='cursor-pointer'>Create acount</span>
-                </div>
-              ):(
-                <div className='underline'>
-                  Already have an acount?
-                  <span className='cursor-pointer' onClick={()=>setcurrState('Login')}>Login</span>
-                </div>
-              )}
+            <button 
+              type='submit' 
+              className={`btn-dark w-full mt-5 !py-3 !rounded flex justify-center items-center ${
+                isLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <svg 
+                    className="w-5 h-5 mr-2 text-white animate-spin" 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" 
+                    viewBox="0 0 24 24"
+                  >
+                    <circle 
+                      className="opacity-25" 
+                      cx="12" 
+                      cy="12" 
+                      r="10" 
+                      stroke="currentColor" 
+                      strokeWidth="4"
+                    ></circle>
+                    <path 
+                      className="opacity-75" 
+                      fill="currentColor" 
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Verificando...
+                </>
+              ) : 'Iniciar Sesión'}
+            </button>
+
+            <div className="mt-4 text-sm text-center text-gray-600">
+              <p>¿Problemas para acceder? Contacta al administrador</p>
             </div>
           </form>
         </div>
       </div>
     </section>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;

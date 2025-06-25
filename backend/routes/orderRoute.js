@@ -1,3 +1,4 @@
+// routes/orderRoutes.js
 import express from 'express';
 import { 
   placeOrder, 
@@ -6,24 +7,58 @@ import {
   userOrders, 
   orderStatus, 
   verifyStripe,
-  deleteOrder // Importar nuevo controlador
+  deleteOrder
 } from '../controllers/orderController.js';
-import adminAuth from '../middleware/adminAuth.js';
-import authUser from '../middleware/auth.js';
+import { 
+  authenticateUser,
+  canViewOrders,
+  canUpdateOrders,
+  canDeleteOrders
+} from '../middleware/authMiddleware.js';
 
 const orderRouter = express.Router();
 
-// Para administrador
-orderRouter.post('/list', adminAuth, allOrders);
-orderRouter.post('/status', adminAuth, orderStatus);
-orderRouter.delete('/:orderId', adminAuth, deleteOrder); 
+// Ruta para listar todas las órdenes (solo admin)
+orderRouter.get('/list', 
+  authenticateUser,
+  canViewOrders, 
+  allOrders
+);
 
-// Para métodos de pago
-orderRouter.post('/place', authUser, placeOrder);
-orderRouter.post('/stripe', authUser, placeOrderStripe);
+// Actualizar estado de la orden (solo admin)
+orderRouter.post('/status', 
+  authenticateUser,
+  canUpdateOrders, 
+  orderStatus
+);
 
-// Para usuario
-orderRouter.post('/userorders', authUser, userOrders);
-orderRouter.post('/verify', authUser, verifyStripe);
+// Eliminar orden (solo admin)
+orderRouter.delete('/:id', 
+  authenticateUser,
+  canDeleteOrders, 
+  deleteOrder
+);
+
+// Crear orden con pago en efectivo
+orderRouter.post('/place', 
+  placeOrder
+);
+
+// Crear orden con pago por Stripe
+orderRouter.post('/stripe', 
+  placeOrderStripe);
+
+// Obtener órdenes de usuario (propio usuario o admin)
+orderRouter.post('/userorders',
+  authenticateUser,
+  userOrders
+);
+
+// Verificar pago de Stripe (solo admin)
+orderRouter.post('/verify', 
+  authenticateUser,
+  canUpdateOrders,
+  verifyStripe
+);
 
 export default orderRouter;
