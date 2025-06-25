@@ -21,6 +21,17 @@ const allowedOrigins = [
   'http://localhost:5174'
 ];
 
+app.use((err, req, res, next) => {
+  console.error('Error global:', err);
+  
+  // Manejo específico para errores CORS
+  if (err.message.includes('CORS')) {
+    return res.status(403).json({ error: err.message });
+  }
+  
+  res.status(500).json({ error: 'Error interno del servidor' });
+});
+
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
