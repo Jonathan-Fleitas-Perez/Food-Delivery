@@ -47,6 +47,11 @@ const corsOptions = {
 };
 
 app.use((req, res, next) => {
+  req.url = req.url.replace(/\/{2,}/g, '/');
+  next();
+});
+
+app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
@@ -55,10 +60,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-  req.url = req.url.replace(/\/{2,}/g, '/');
-  next();
-});
+
 // Middlewares
 app.use(express.json());
 app.use(cors(corsOptions));
