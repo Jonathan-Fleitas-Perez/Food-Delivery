@@ -15,7 +15,7 @@ const app = express();
 const port = process.env.PORT || 4000; // Cambié process.env.process por process.env.PORT
 
 const allowedOrigins = [
-  'https://food-delivery-frontend-virid.vercel.app',
+  'https://food-delivery-alpha-rouge.vercel.app',
   'https://food-delivery-ruby-alpha.vercel.app',
   'http://localhost:5173', // Para desarrollo local
   'http://localhost:5174'
