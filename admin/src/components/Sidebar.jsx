@@ -16,9 +16,20 @@ const Sidebar = ({ token, setToken, userRole, permissions }) => {
     <div className='pb-3 bg-white rounded max-sm:flexCenter max-xs:pb-3 sm:w-1/5 sm:min-h-screen'>
         <div className='flex pt-5 max-sm:items-center sm:flex-col'>
             <div className='flex sm:flex-col gap-x-5 gap-y-8 sm:pt-10'>
+
+
+                {/* Mostrar solo si tiene permiso para ver dashboard */}
+                {hasPermission('dashboard', 'read') && (
+                  <NavLink to={'/'} className={({isActive})=>isActive ? 'active-link': 'flexStart gap-x-2 sm:pl-12 p-5 medium-15 cursor-pointer h-10 rounded-xl'}>
+                      <FaChartBar/>
+                      <div className='hidden lg:flex'>Dashboard</div>
+                  </NavLink>
+                )}
+
+
                 {/* Mostrar solo si tiene permiso para crear productos */}
                 {hasPermission('products', 'create') && (
-                  <NavLink to={'/'} className={({isActive})=>isActive ? 'active-link': 'flexStart gap-x-2 sm:pl-12 p-5 medium-15 cursor-pointer h-10 rounded-xl'}>
+                  <NavLink to={'/add'} className={({isActive})=>isActive ? 'active-link': 'flexStart gap-x-2 sm:pl-12 p-5 medium-15 cursor-pointer h-10 rounded-xl'}>
                       <FaSquarePlus />
                       <div className='hidden lg:flex'>Add Items</div>
                   </NavLink>
@@ -40,13 +51,7 @@ const Sidebar = ({ token, setToken, userRole, permissions }) => {
                   </NavLink>
                 )}
 
-                {/* Mostrar solo si tiene permiso para ver dashboard */}
-                {hasPermission('dashboard', 'read') && (
-                  <NavLink to={'/dashboard'} className={({isActive})=>isActive ? 'active-link': 'flexStart gap-x-2 sm:pl-12 p-5 medium-15 cursor-pointer h-10 rounded-xl'}>
-                      <FaChartBar/>
-                      <div className='hidden lg:flex'>Dashboard</div>
-                  </NavLink>
-                )}
+
 
                 {/* Mostrar solo si es administrador */}
                 {userRole === 'admin' && (

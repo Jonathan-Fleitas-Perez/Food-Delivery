@@ -105,7 +105,7 @@ const App = () => {
               permissions={userPermissions}
             />
             <Routes>
-              <Route path='/' element={
+              <Route path='/add' element={
                 <RouteValidator resource="products" action="create">
                   <Add token={token} permissions={userPermissions} />
                 </RouteValidator>
@@ -123,7 +123,7 @@ const App = () => {
                 </RouteValidator>
               }/>
               
-              <Route path='/dashboard' element={
+              <Route path='/' element={
                 <RouteValidator resource="dashboard" action="read">
                   <Dashboard token={token} permissions={userPermissions} />
                 </RouteValidator>

@@ -9,13 +9,9 @@ import { ShopConstest } from "../context/ShopContext";
 
 const Header = () => {
   const [menuOpened, setMenuOpened] = useState(false);
-  const {token,navigate,getCartCount}= useContext(ShopConstest)
+  const {token,navigate,getCartCount,logout}= useContext(ShopConstest)
   
 
-  const logout = () => {
-    localStorage.removeItem('user')
-    navigate('/login')
-  }
   const toggleMenu = ()=>{setMenuOpened((prev)=> !prev);} //Funcion para abrir y cerrar el menu lateral en mobile
 
   return (

@@ -4,34 +4,57 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { ShopConstest} from '../context/ShopContext';
+import { ShopConstest } from '../context/ShopContext';
 import { backendUrl } from '../../../admin/src/App';
 
 const Login = () => {
+  // Estados para autenticación
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  
+  // Estados para registro
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [name, setName] = useState('');
+  
   const { login, user } = useContext(ShopConstest);
   const navigate = useNavigate();
 
-  // Validar formulario antes de enviar
-  const validateForm = () => {
+  // Validaciones para login
+  const validateLoginForm = () => {
     const newErrors = {};
-    
     if (!email.trim()) {
       newErrors.email = 'El email es obligatorio';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Email inválido';
     }
-    
     if (!password) {
       newErrors.password = 'La contraseña es obligatoria';
     } else if (password.length < 6) {
       newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
     }
-    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Validaciones para registro
+  const validateRegisterForm = () => {
+    const newErrors = {};
+    if (!name.trim()) {
+      newErrors.name = 'El nombre es obligatorio';
+    }
+    if (!email.trim()) {
+      newErrors.email = 'El email es obligatorio';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Email inválido';
+    }
+    if (!password) {
+      newErrors.password = 'La contraseña es obligatoria';
+    } else if (password.length < 8) {
+      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -40,30 +63,55 @@ const Login = () => {
     try {
       e.preventDefault();
       
-      // Validar formulario
-      if (!validateForm()) return;
-      
-      setIsLoading(true);
-      const response = await axios.post(`${backendUrl}/api/user/login`, { email, password });
-      
-      if (response.data.success) {
-        const token = response.data.token;
-        login(token);
+      // Validar según el modo
+      if (isRegistering) {
+        if (!validateRegisterForm()) return;
       } else {
-        toast.error(response.data.message);
+        if (!validateLoginForm()) return;
+      }
+
+      setIsLoading(true);
+
+      // Registro de usuario
+      if (isRegistering) {
+        const response = await axios.post(`${backendUrl}/api/user/register`, {
+          name,
+          email,
+          password
+        });
+        
+        if (response.data.success) {
+          toast.success('Registro exitoso. Inicia sesión ahora.');
+          setIsRegistering(false); // Volver a login
+          setEmail('');
+          setPassword('');
+          setName('');
+        }
+      } 
+      // Login de usuario
+      else {
+        const response = await axios.post(`${backendUrl}/api/user/login`, { 
+          email, 
+          password 
+        });
+        
+        if (response.data.success) {
+          const token = response.data.token;
+          login(token);
+        } else {
+          toast.error(response.data.message);
+        }
       }
     } catch (error) {
       console.error(error);
-      
-      // Manejar errores específicos
       if (error.response) {
         const { status, data } = error.response;
-        if (status === 401) {
+        if (status === 400 && isRegistering) {
+          toast.error('Este correo ya está registrado');
+        } else if (status === 401) {
           toast.error('Credenciales inválidas');
-        } else if (status === 403) {
-          toast.error('Acceso denegado');
         } else {
-          toast.error(data.message || 'Error en el inicio de sesión');
+          toast.error(data.message || 'Error en la operación');
         }
       } else {
         toast.error('Error de conexión con el servidor');
@@ -88,15 +136,40 @@ const Login = () => {
         <div className='hidden w-1/2 sm:block'>
           <img src={loginImg} alt="Image Login" className='object-cover w-full h-full' />
         </div>
-
         {/*Form side */}
         <div className='w-full flexCenter sm:w-1/2'>
           <form onSubmit={onSubmitHandler} className='flex flex-col items-center w-[90%] sm:max-w-md m-auto gap-y-5 text-gray-800'>
             <div className='w-full mb-4 text-center'>
-              <h3 className='text-gray-900 bold-36'>Panel de Administración</h3>
-              <p className='mt-2 text-gray-600 medium-15'>Ingrese sus credenciales para acceder</p>
+              <h3 className='text-gray-900 bold-36'>
+                {isRegistering ? 'Regístrate' : 'Inicia Sesión'}
+              </h3>
+              <p className='mt-2 text-gray-600 medium-15'>
+                {isRegistering 
+                  ? 'Crea tu cuenta para comenzar' 
+                  : 'Ingresa tus credenciales'
+                }
+              </p>
             </div>
-            
+
+            {/* Campo nombre solo en registro */}
+            {isRegistering && (
+              <div className='w-full'>
+                <label htmlFor="name" className='block mb-1 medium-15'>Nombre</label>
+                <input 
+                  type="text" 
+                  onChange={(e) => setName(e.target.value)} 
+                  value={name} 
+                  placeholder='Tu nombre' 
+                  className={`w-full px-4 py-2 ring-1 ring-slate-900/10 rounded bg-white mt-1 ${
+                    errors.name ? 'ring-red-500 focus:ring-red-500' : 'focus:ring-blue-500'
+                  }`}
+                  disabled={isLoading}
+                />
+                {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
+              </div>
+            )}
+
+            {/* Campo email */}
             <div className='w-full'>
               <label htmlFor="email" className='block mb-1 medium-15'>Email</label>
               <input 
@@ -112,6 +185,7 @@ const Login = () => {
               {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
             </div>
 
+            {/* Campo contraseña */}
             <div className='w-full'>
               <label htmlFor="password" className='block mb-1 medium-15'>Contraseña</label>
               <div className="relative">
@@ -137,6 +211,7 @@ const Login = () => {
               {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
             </div>
 
+            {/* Botón de acción */}
             <button 
               type='submit' 
               className={`btn-dark w-full mt-5 !py-3 !rounded flex justify-center items-center ${
@@ -166,10 +241,28 @@ const Login = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Verificando...
+                  {isRegistering ? 'Registrando...' : 'Iniciando...'}
                 </>
-              ) : 'Iniciar Sesión'}
+              ) : isRegistering ? 'Crear Cuenta' : 'Iniciar Sesión'}
             </button>
+
+            {/* Enlace para cambiar entre modos */}
+            <div className="mt-4 text-sm text-center text-gray-600">
+              <button 
+                type="button"
+                className="text-blue-600 hover:underline"
+                onClick={() => {
+                  setIsRegistering(!isRegistering);
+                  setErrors({});
+                }}
+                disabled={isLoading}
+              >
+                {isRegistering 
+                  ? '¿Ya tienes cuenta? Inicia sesión' 
+                  : '¿No tienes cuenta? Regístrate'
+                }
+              </button>
+            </div>
 
             <div className="mt-4 text-sm text-center text-gray-600">
               <p>¿Problemas para acceder? Contacta al administrador</p>

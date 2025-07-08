@@ -191,7 +191,7 @@ const ShopContextProvider = (props) => {
   // Obtener productos
   const getProductsData = async () => {
     try {
-      const response = await axios.get(`${backendUrl}/api/product/list`);
+      const response = await axios.get(`${backendUrl}/api/product/list/all`);
       if (response.data.success) {
         setFoods(response.data.products);
       } else {

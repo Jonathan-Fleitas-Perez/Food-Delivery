@@ -20,7 +20,6 @@ export const backendUrl = import.meta.env.VITE_BACKEND_URL
 const App = () => {
   
   return (
-    <AuthProvider>
     <ShopContextProvider>
     <main className='overflow-hidden text-[#404040] bg-primary'>
       <ToastContainer/>
@@ -37,7 +36,6 @@ const App = () => {
       </Routes>
     </main>
     </ShopContextProvider>
-    </AuthProvider>
   )
 }
 
