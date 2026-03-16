@@ -1,5 +1,6 @@
-import  { createContext, useContext, useState, useEffect } from "react";
+import  { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 
 const AuthContext = createContext();
@@ -12,21 +13,47 @@ export const AuthProvider = ({ children }) => {
   });
   const navigate = useNavigate();
 
+  const login = (token, userData) => {
+    localStorage.setItem("token", token);
+    const decoded = JSON.parse(atob(token.split('.')[1]));
+    setAuthState({
+      user: { id: decoded.id, role: decoded.role, name: decoded.name, ...userData },
+      permissions: decoded.permissions || [],
+      isLoading: false,
+    });
+  };
+
+  const logout = useCallback(async () => {
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      await axios.post(`${backendUrl}/api/user/logout`);
+    } catch (e) { console.error(e); }
+    
+    localStorage.removeItem("token");
+    setAuthState({
+      user: null,
+      permissions: [],
+      isLoading: false,
+    });
+    navigate("/login");
+  }, [navigate]);
+
   useEffect(() => {
     const initializeAuth = async () => {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
+      const storedToken = localStorage.getItem("token"); // Usado como señal
+      if (storedToken) {
         try {
-          const userData = JSON.parse(storedUser);
-          const decodedToken = JSON.parse(atob(userData.token.split('.')[1]));
+          const decodedToken = JSON.parse(atob(storedToken.split('.')[1]));
           
           if (decodedToken.exp * 1000 > Date.now()) {
             setAuthState({
-              user: userData,
-              permissions: userData.permissions || [],
+              user: { id: decodedToken.id, role: decodedToken.role, name: decodedToken.name },
+              permissions: decodedToken.permissions || [],
               isLoading: false,
             });
           } else {
+            // Intentar refrescar vía interceptor o llamar a logout
+            // Por simplicidad, si expira aquí, intentamos un ping o logout
             logout();
           }
         } catch (error) {
@@ -39,27 +66,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, []);
-
-  const login = (token, userData) => {
-    const user = { token, ...userData };
-    localStorage.setItem("user", JSON.stringify(user));
-    setAuthState({
-      user,
-      permissions: userData.permissions || [],
-      isLoading: false,
-    });
-  };
-
-  const logout = () => {
-    localStorage.removeItem("user");
-    setAuthState({
-      user: null,
-      permissions: [],
-      isLoading: false,
-    });
-    navigate("/login");
-  };
+  }, [logout]);
 
   return (
     <AuthContext.Provider

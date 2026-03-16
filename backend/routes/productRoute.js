@@ -1,16 +1,19 @@
 import express from "express";
-import { 
-  addProduct, 
-  listProduct, 
-  removeProduct, 
-  searchProducts, 
-  singleProduct, 
+import productController from "../controllers/productController.js";
+const {
+  addProduct,
+  listProduct,
+  removeProduct,
+  searchProducts,
+  singleProduct,
   updateProduct,
-  listAllProducts  
-} from "../controllers/productController.js";
+  listAllProducts,
+  rateProduct,
+  totalReviewsCount
+} = productController;
 import upload from "../middleware/multer.js";
-import { 
-  authenticateUser, 
+import {
+  authenticateUser,
   canCreateProducts,
   canReadProducts,
   canUpdateProducts,
@@ -40,6 +43,9 @@ productRouter.put('/:productId',
   updateProduct
 );
 
+// Ruta pública: total de reseñas
+productRouter.get('/reviews/count', totalReviewsCount);
+
 // Listado público para el frontend
 productRouter.get('/list/all', listAllProducts);
 
@@ -48,5 +54,8 @@ productRouter.get('/list',  listProduct);
 
 productRouter.get('/:productId', singleProduct);
 productRouter.get('/search', searchProducts);
+
+// Ruta para calificar (requiere auth)
+productRouter.post('/:productId/rate', authenticateUser, rateProduct);
 
 export default productRouter;

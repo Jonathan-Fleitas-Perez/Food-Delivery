@@ -10,28 +10,28 @@ const Process = () => {
       <div className='flex flex-col gap-20 xl:flex-row'>
         {/*left side */}
         <div className='flex-1 flex flex-col justify-center'>
-          <h4 className='h3 max-w-[411px] capitalize'>Order you favorite food in just a few clicks</h4>
-          <p>Experience the convenience of ordering delicius meals anytime , anywhere. Follo these simple steps and have favorite food delivvered straight to your door</p>
+          <h4 className='h3 max-w-[411px] capitalize'>Pide tu comida favorita en solo unos clics</h4>
+          <p>Experimenta la comodidad de pedir comidas deliciosas en cualquier momento y lugar. Sigue estos sencillos pasos y recibe tu comida favorita directamente en tu puerta</p>
          
           <div className='my-7 flex - flex-col gap-4'>
             <div className='flexStart gap-x-4'> 
               <span className='bg-secondary text-white h-6 w-6 p-1.5 flexCenter rounded-full'><GiCheckMark/></span>
-              <p>Explore a wide variety of dishes and cuisines</p>
+              <p>Explora una amplia variedad de platos y cocinas</p>
             </div>
 
             <div className='flexStart gap-x-4'> 
               <span className='bg-secondary text-white h-6 w-6 p-1.5 flexCenter rounded-full'><GiCheckMark/></span>
-              <p>Choose your favorite items and add them to your cart</p>
+              <p>Elige tus platos favoritos y añádelos a tu carrito</p>
             </div>
 
             <div className='flexStart gap-x-4'> 
               <span className='bg-secondary text-white h-6 w-6 p-1.5 flexCenter rounded-full'><GiCheckMark/></span>
-              <p>Enter your details and confirm your order with ease</p>
+              <p>Introduce tus datos y confirma tu pedido fácilmente</p>
             </div>
 
             <div className='flexStart gap-x-4'> 
               <span className='bg-secondary text-white h-6 w-6 p-1.5 flexCenter rounded-full'><GiCheckMark/></span>
-              <p>Stay update with real-time tracking until your food arrives</p>
+              <p>Mantente informado con el seguimiento en tiempo real hasta que llegue tu comida</p>
             </div>
 
           </div>

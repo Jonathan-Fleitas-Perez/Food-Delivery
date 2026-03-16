@@ -236,10 +236,10 @@ const UserManagement = ({ token }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                     user.role === 'admin' ? 'bg-red-100 text-red-800' : 
-                    user.role === 'manager' ? 'bg-blue-100 text-blue-800' : 
+                    user.role === 'moderator' ? 'bg-blue-100 text-blue-800' : 
                     'bg-green-100 text-green-800'
                   }`}>
-                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                    {user.role === 'moderator' ? 'Moderador' : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -379,10 +379,10 @@ const UserManagement = ({ token }) => {
                     <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
                     <span className={`ml-2 px-2 py-0.5 text-xs font-semibold rounded-full ${
                       user.role === 'admin' ? 'bg-red-100 text-red-800' : 
-                      user.role === 'manager' ? 'bg-blue-100 text-blue-800' : 
+                      user.role === 'moderator' ? 'bg-blue-100 text-blue-800' : 
                       'bg-green-100 text-green-800'
                     }`}>
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                      {user.role === 'moderator' ? 'Moderador' : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                     </span>
                   </div>
                   <p className="mt-1 text-gray-600 truncate">{user.email}</p>

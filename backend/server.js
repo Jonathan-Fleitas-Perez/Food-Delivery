@@ -1,3 +1,4 @@
+import './polyfill.js'
 import 'dotenv/config'
 import express from "express"
 import cors from "cors"
@@ -8,8 +9,12 @@ import productRouter from "./routes/productRoute.js";
 import cartRouter from "./routes/cartRoute.js";
 import orderRouter from './routes/orderRoute.js';
 import dashboardRouter from './routes/dashboardRoute.js';
+import municipalityRouter from './routes/municipalityRoute.js'
+import categoryRouter from './routes/categoryRoute.js';
+import offerRouter from './routes/offerRoute.js';
+import cookieParser from 'cookie-parser';
 import userModel from './models/userModel.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const app = express();
 const port = process.env.PORT || 4000; // Cambié process.env.process por process.env.PORT
@@ -17,8 +22,10 @@ const port = process.env.PORT || 4000; // Cambié process.env.process por proces
 const allowedOrigins = [
   'https://food-delivery-alpha-rouge.vercel.app',
   'https://food-delivery-ruby-alpha.vercel.app',
-  'http://localhost:5173', // Para desarrollo local
-  'http://localhost:5174'
+  'http://localhost:5180', // Para desarrollo local
+  'http://localhost:5181',
+  'http://localhost:5173',
+  'http://localhost:5172'
 ];
 
 app.use((err, req, res, next) => {
@@ -63,6 +70,7 @@ app.use((req, res, next) => {
 
 // Middlewares
 app.use(express.json());
+app.use(cookieParser());
 app.use(cors(corsOptions));
 
 app.options('*', cors(corsOptions));
@@ -73,6 +81,9 @@ app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/municipality', municipalityRouter)
+app.use('/api/category', categoryRouter);
+app.use('/api/offer', offerRouter);
 
 app.get('/', (req, res) => {
   res.send("Api conectada");

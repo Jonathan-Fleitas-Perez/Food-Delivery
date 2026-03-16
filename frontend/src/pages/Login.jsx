@@ -5,7 +5,6 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { ShopConstest } from '../context/ShopContext';
-import { backendUrl } from '../../../admin/src/App';
 
 const Login = () => {
   // Estados para autenticación
@@ -18,8 +17,9 @@ const Login = () => {
   // Estados para registro
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
-  const { login, user } = useContext(ShopConstest);
+  const { login, user, backendUrl } = useContext(ShopConstest);
   const navigate = useNavigate();
 
   // Validaciones para login
@@ -54,6 +54,13 @@ const Login = () => {
       newErrors.password = 'La contraseña es obligatoria';
     } else if (password.length < 8) {
       newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
+    } else if (!/[A-Z]/.test(password)) {
+      newErrors.password = 'Debe contener al menos una mayúscula';
+    } else if (!/[0-9]/.test(password)) {
+      newErrors.password = 'Debe contener al menos un número';
+    }
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Las contraseñas no coinciden';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -210,6 +217,24 @@ const Login = () => {
               </div>
               {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
             </div>
+
+            {/* Confirmar contraseña solo en registro */}
+            {isRegistering && (
+              <div className='w-full'>
+                <label htmlFor="confirmPassword" className='block mb-1 medium-15'>Confirmar Contraseña</label>
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  value={confirmPassword} 
+                  placeholder='••••••••' 
+                  className={`w-full px-4 py-2 ring-1 ring-slate-900/10 rounded bg-white mt-1 ${
+                    errors.confirmPassword ? 'ring-red-500 focus:ring-red-500' : 'focus:ring-blue-500'
+                  }`}
+                  disabled={isLoading}
+                />
+                {errors.confirmPassword && <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>}
+              </div>
+            )}
 
             {/* Botón de acción */}
             <button 

@@ -29,13 +29,7 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, 'La categoría es obligatoria'],
-    minlength: [3, 'La categoría debe tener al menos 3 caracteres'],
-    maxlength: [50, 'La categoría no puede exceder los 50 caracteres'],
     trim: true,
-    enum: {
-      values: ['Curry', 'Pizza', 'Rice', 'Deserts','Drinks','Fruits'],
-      message: 'Categoría inválida. Valores permitidos: bebidas, comida, postres, ensaladas'
-    }
   },
   
   image: {
@@ -52,26 +46,11 @@ const productSchema = new mongoose.Schema({
     }
   },
   
-price: {
-  type: Object,
-  required: [true, 'Los precios son obligatorios'],
-  validate: {
-    validator: function(value) {
-      const sizes = Object.keys(value);
-      
-      // Validación 1: Debe tener al menos un tamaño definido
-      if (sizes.length === 0) return false;
-      
-      // Validación 2: Todos los precios deben ser números positivos
-      const allPricesValid = sizes.every(size => {
-        return typeof value[size] === 'number' && value[size] > 0;
-      });
-      
-      return allPricesValid;
-    },
-    message: 'Debe tener al menos un tamaño con un precio numérico positivo'
-  }
-},
+  price: {
+    type: Number,
+    required: [true, 'El precio es obligatorio'],
+    min: [0, 'El precio debe ser un número positivo']
+  },
   
   date: {
     type: Number,
@@ -83,51 +62,32 @@ price: {
     }
   },
   
-  sizes: {
-    type: [String],
-    required: [true, 'Los tamaños son obligatorios'],
-    validate: {
-      validator: (value) => {
-        // Validar que haya al menos un tamaño
-        if (value.length === 0) return false;
-        
-        // Validar que todos los tamaños sean válidos
-        const validSizes = ['S', 'M', 'L'];
-        return value.every(size => validSizes.includes(size));
-      },
-      message: 'Debe tener al menos un tamaño válido (small, medium, large)'
-    }
-  }, 
-   salesCount: {
+  salesCount: {
     type: Number,
     default: 0
   },  
   popular: {
     type: Boolean,
     default: false
-  }
+  },
+  averageRating: {
+    type: Number,
+    default: 0
+  },
+  totalReviews: {
+    type: Number,
+    default: 0
+  },
+  ratings: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuarios' },
+    userName: String,
+    rating: { type: Number, required: true, min: 0, max: 5 },
+    comment: String,
+    date: { type: Date, default: Date.now }
+  }]
 }, {
   timestamps: false, // Deshabilitamos los timestamps automáticos porque tenemos date
   versionKey: false // No necesitamos __v
-});
-
-// Middleware para validar consistencia entre precios y tamaños
-productSchema.pre('validate', function(next) {
-  const priceSizes = Object.keys(this.price || {});
-  const definedSizes = this.sizes || [];
-  
-  // Verificar que todos los tamaños en price estén en sizes
-  const missingInSizes = priceSizes.filter(size => !definedSizes.includes(size));
-  
-  if (missingInSizes.length > 0) {
-    this.invalidate(
-      'price', 
-      `Los tamaños en precio (${missingInSizes.join(', ')}) no están definidos en la lista de tamaños`,
-      this.price
-    );
-  }
-  
-  next();
 });
 
 // Crear índice para búsquedas eficientes

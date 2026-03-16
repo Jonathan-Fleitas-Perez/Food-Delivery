@@ -181,7 +181,7 @@ const UserForm = ({ token, user, onClose, onUserUpdated }) => {
           }`}
         >
           <option value="customer">Cliente</option>
-          <option value="manager">Manager</option>
+          <option value="moderator">Moderador</option>
           <option value="admin">Administrador</option>
         </select>
         {isCurrentUser && (

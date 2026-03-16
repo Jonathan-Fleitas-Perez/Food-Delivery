@@ -8,7 +8,7 @@ const Tittle = ({title1,title2,titleStyles,paraStyle}) => {
         <span className='text-secondary !font-light'>{title2}</span>
       </h2>
 
-      <p className={`${paraStyle} hidden`}>our food products are crafted with the finest ingredients to <br/> deliver exceptional taste and quality</p>
+      <p className={`${paraStyle} hidden`}>Nuestros platillos están elaborados con los ingredientes más finos para <br/> ofrecer un sabor y calidad excepcionales</p>
     </div>
   )
 }

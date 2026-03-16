@@ -8,33 +8,69 @@ import { toast } from 'react-toastify';
 import { z } from 'zod';
 
 const PlaceOrder = () => {
-  const { navigate, backendUrl, cartItems, setCartItems, user, foods, token } = useContext(ShopConstest);
-  const [method, setMethod] = useState('cod');
+  const { navigate, backendUrl, cartItems, setCartItems, user, foods, token, setDeliveryCharges, deliveryCharges } = useContext(ShopConstest);
+  const [municipalities, setMunicipalities] = useState([]);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: '',
-    street: '',
-    state: '',
-    city: '',
-    zipcode: '',
-    country: '',
-    phone: '',
+    province: 'La Habana',
+    municipality: '',
+    exactAddress: '',
   });
+  const [saveToProfile, setSaveToProfile] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Cargar Municipios
+  React.useEffect(() => {
+    const fetchMunicipalities = async () => {
+        try {
+            const response = await axios.get(`${backendUrl}/api/municipality/list`);
+            if (response.data.success) {
+                const activeMunicipalities = response.data.data.filter(m => m.active);
+                setMunicipalities(activeMunicipalities);
+            }
+        } catch (error) {
+            console.error('Error cargando municipios:', error);
+        }
+    };
+    fetchMunicipalities();
+  }, [backendUrl]);
+
+  // Si el usuario tiene una dirección guardada
+  React.useEffect(() => {
+     if (user) {
+         setFormData(prev => ({
+             ...prev,
+             firstName: prev.firstName || (user.name ? user.name.split(' ')[0] : ''),
+             lastName: prev.lastName || (user.name ? user.name.split(' ').slice(1).join(' ') : ''),
+             municipality: prev.municipality || (user.defaultDeliveryAddress?.municipality || ''),
+             exactAddress: prev.exactAddress || (user.defaultDeliveryAddress?.exactAddress || '')
+         }));
+     }
+  }, [user]);
+
+  // Actualizar costo de envío al cambiar el municipio
+  React.useEffect(() => {
+     if (formData.municipality && municipalities.length > 0) {
+         const selectedMun = municipalities.find(m => m.name === formData.municipality);
+         if (selectedMun) {
+             setDeliveryCharges(selectedMun.deliveryFee);
+         } else {
+             setDeliveryCharges(0);
+         }
+     } else {
+         setDeliveryCharges(0);
+     }
+  }, [formData.municipality, municipalities, setDeliveryCharges]);
 
   // Esquema de validación con Zod
   const addressSchema = z.object({
     firstName: z.string().min(1, "Nombre es requerido"),
     lastName: z.string().min(1, "Apellido es requerido"),
-    email: z.string().email("Email inválido"),
-    street: z.string().min(1, "Calle es requerida"),
-    state: z.string().min(1, "Estado es requerido"),
-    city: z.string().min(1, "Ciudad es requerida"),
-    zipcode: z.string().min(1, "Código postal es requerido"),
-    country: z.string().min(1, "País es requerido"),
-    phone: z.string().min(6, "Teléfono debe tener al menos 6 caracteres")
+    province: z.string().min(1, "Provincia requerida"),
+    municipality: z.string().min(1, "Selecciona un municipio"),
+    exactAddress: z.string().min(5, "Dirección exacta demasiado corta")
   });
 
   const onChangeHandler = (e) => {
@@ -69,10 +105,9 @@ const PlaceOrder = () => {
     }
   };
 
- const onSubmitHandler = async (event) => {
+  const onSubmitHandler = async (event) => {
   event.preventDefault();
   
-  // Validar formulario
   if (!validateForm()) {
     toast.error('Por favor complete todos los campos correctamente');
     return;
@@ -81,77 +116,90 @@ const PlaceOrder = () => {
   setIsSubmitting(true);
 
   try {
+    // Si el usuario marcó guardar en el perfil
+    if (saveToProfile) {
+      const profileData = new FormData();
+      profileData.append('name', `${formData.firstName} ${formData.lastName}`);
+      profileData.append('address', JSON.stringify({
+        province: formData.province,
+        municipality: formData.municipality,
+        exactAddress: formData.exactAddress
+      }));
+
+      await axios.put(`${backendUrl}/api/user/profile/update`, profileData, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    }
+
     let orderItems = [];
-    let totalAmount = 0;  // Calcular el monto total
+    let totalAmount = 0;
     
-    for (const [itemId, sizes] of Object.entries(cartItems)) {
-      for (const [size, quantity] of Object.entries(sizes)) {
-        if (quantity > 0) {
-          const itemInfo = foods.find(food => food._id === itemId);
-          if (itemInfo) {
-            // Obtener el precio correcto para el tamaño seleccionado
-            const price = typeof itemInfo.price === 'object' 
-              ? itemInfo.price[size] 
-              : itemInfo.price;
-            
-            totalAmount += price * quantity;
-            
-            orderItems.push({
-              name: itemInfo.name,
-              size,
-              quantity,
-              price: Number(price)  // Asegurar que sea número
-            });
-          }
+    for (const itemId in cartItems) {
+      const quantity = cartItems[itemId];
+      if (quantity > 0) {
+        const itemInfo = foods.find(food => food._id === itemId);
+        if (itemInfo) {
+          const price = itemInfo.price;
+          totalAmount += price * quantity;
+          
+          orderItems.push({
+            name: itemInfo.name,
+            quantity,
+            price: Number(price)
+          });
         }
       }
     }
 
-    // Validar que hay al menos un ítem en el carrito
     if (orderItems.length === 0) {
       toast.error('El carrito está vacío');
       setIsSubmitting(false);
       return;
     }
 
-    // Redondear a 2 decimales para evitar problemas de precisión
     totalAmount = Number(totalAmount.toFixed(2));
+    const totalConEnvio = totalAmount + deliveryCharges;
     
+    // Guardar orden en BD
     const orderData = {
-      userId: user.id,  // Asegúrate de tener el user del contexto
+      userId: user.id,
       address: formData,
       items: orderItems,
-      amount: totalAmount,
-      paymentMethod: method === 'cod' ? 'COD' : 'Stripe'  // Agregar paymentMethod
+      amount: totalConEnvio,
+      paymentMethod: 'WhatsApp'
     };
 
-    const endpoint = method === 'cod' 
-      ? '/api/order/place' 
-      : '/api/order/stripe';
-
     const response = await axios.post(
-      backendUrl + endpoint, 
+      backendUrl + '/api/order/place', 
       orderData, 
       { headers: { token } }
     );
     
     if (response.data.success) {
-      setCartItems({});
+      // Construir mensaje de WhatsApp
+      let msg = `🍔 *Nuevo Pedido - Sudy's Food*\n\n`;
+      msg += `👤 *Cliente:* ${formData.firstName} ${formData.lastName}\n`;
+      msg += `📍 *Dirección:* ${formData.municipality}, ${formData.exactAddress}\n\n`;
+      msg += `📋 *Productos:*\n`;
+      orderItems.forEach(item => {
+        msg += `  - ${item.name} x${item.quantity} = $${(item.price * item.quantity).toFixed(2)}\n`;
+      });
+      msg += `\n💰 Subtotal: $${totalAmount.toFixed(2)}`;
+      msg += `\n🚚 Envío (${formData.municipality}): $${deliveryCharges}`;
+      msg += `\n💵 *Total: $${totalConEnvio.toFixed(2)}*`;
       
-      if (method === 'cod') {
-        toast.success('¡Orden creada con éxito!');
-        navigate('/orders');
-      } else {
-        const { session_url } = response.data;
-        window.location.replace(session_url);
-      }
+      const waUrl = `https://wa.me/5352375485?text=${encodeURIComponent(msg)}`;
+      
+      setCartItems({});
+      toast.success('¡Pedido enviado! Te redirigimos a WhatsApp.');
+      
+      window.open(waUrl, '_blank');
+      navigate('/orders');
     } else {
       toast.error(response.data.message);
     }
   } catch (error) {
     console.error('Error al crear la orden:', error);
-    
-    // Mostrar detalles del error de validación
     if (error.response?.data?.errors) {
       error.response.data.errors.forEach(err => {
         toast.error(`${err.field}: ${err.message}`);
@@ -167,26 +215,26 @@ const PlaceOrder = () => {
   // Función para obtener clase de error
   const getInputClass = (fieldName) => {
     return formErrors[fieldName] 
-      ? 'ring-1 ring-red-500 p-1 pl-3 rounded-sm bg-primary outline-none'
-      : 'ring-1 ring-slate-900/15 p-1 pl-3 rounded-sm bg-primary outline-none';
+      ? 'ring-1 ring-red-500 p-2 pl-3 rounded-sm bg-primary outline-none w-full'
+      : 'ring-1 ring-slate-900/15 p-2 pl-3 rounded-sm bg-primary outline-none w-full';
   };
 
   return (
     <section className='mt-24 max-padd-container'>
       <form onSubmit={onSubmitHandler} className='py-6'>
-        <div className='flex flex-col gap-20 xl:flex-row xl:gap-28'>
-          <div className='flex flex-1 flex-col gap-3 text-[95%]'>
+        <div className='flex flex-col gap-10 xl:flex-row xl:gap-28'>
+          <div className='flex flex-1 flex-col gap-5 text-[95%]'>
             {/* Información de Envío */}
-            <Tittle title1={'Delivery'} title2={'information'} titleStyles={'h3'}/>
+            <Tittle title1={'Dirección'} title2={' Entrega'} titleStyles={'h3'}/>
 
-            <div className='flex gap-3'>
+            <div className='flex flex-col sm:flex-row gap-3'>
               <div className="flex-1">
                 <input 
                   onChange={onChangeHandler} 
                   value={formData.firstName} 
                   type="text" 
                   name='firstName' 
-                  placeholder='First Name *' 
+                  placeholder='Nombre *' 
                   className={getInputClass('firstName')}
                 />
                 {formErrors.firstName && (
@@ -199,7 +247,7 @@ const PlaceOrder = () => {
                   value={formData.lastName} 
                   type="text" 
                   name='lastName' 
-                  placeholder='Last Name *' 
+                  placeholder='Apellidos *' 
                   className={getInputClass('lastName')}
                 />
                 {formErrors.lastName && (
@@ -208,147 +256,91 @@ const PlaceOrder = () => {
               </div>
             </div>
             
-            <div>
-              <input 
-                onChange={onChangeHandler} 
-                value={formData.email} 
-                type="email" 
-                name='email' 
-                placeholder='Email *' 
-                className={getInputClass('email')}
-              />
-              {formErrors.email && (
-                <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
-              )}
+            <div className='flex flex-col sm:flex-row gap-3'>
+                <div className="flex-1">
+                  <input 
+                    value={formData.province} 
+                    disabled
+                    type="text" 
+                    title="Operamos solamente en La Habana"
+                    name='province' 
+                    className={`bg-gray-100 text-gray-500 cursor-not-allowed ${getInputClass('province')}`}
+                  />
+                </div>
+                <div className="flex-1">
+                  <select 
+                    onChange={onChangeHandler} 
+                    value={formData.municipality} 
+                    name='municipality' 
+                    className={`${getInputClass('municipality')} w-full text-gray-700`}
+                  >
+                     <option value="" disabled>Selecciona tu Municipio *</option>
+                     {municipalities.map(m => (
+                         <option key={m._id} value={m.name}>{m.name} - ${m.deliveryFee}</option>
+                     ))}
+                  </select>
+                  {formErrors.municipality && (
+                    <p className="mt-1 text-xs text-red-500">{formErrors.municipality}</p>
+                  )}
+                </div>
             </div>
-            
+
             <div>
-              <input 
+              <textarea 
                 onChange={onChangeHandler} 
-                value={formData.phone} 
-                type="text" 
-                name='phone' 
-                placeholder='Phone Number *' 
-                className={getInputClass('phone')}
+                value={formData.exactAddress} 
+                name='exactAddress' 
+                rows="3"
+                placeholder='Dirección Exacta (Calle, No., Entre qué calles, Apto...) *' 
+                className={`resize-none ${getInputClass('exactAddress')} w-full`}
               />
-              {formErrors.phone && (
-                <p className="mt-1 text-xs text-red-500">{formErrors.phone}</p>
-              )}
-            </div>
-            
-            <div>
-              <input 
-                onChange={onChangeHandler} 
-                value={formData.street} 
-                type="text" 
-                name='street' 
-                placeholder='Street *' 
-                className={getInputClass('street')}
-              />
-              {formErrors.street && (
-                <p className="mt-1 text-xs text-red-500">{formErrors.street}</p>
+              {formErrors.exactAddress && (
+                <p className="mt-1 text-xs text-red-500">{formErrors.exactAddress}</p>
               )}
             </div>
 
-            <div className='flex gap-3'>
-              <div className="flex-1">
+            {/* Checkbox informativo de guardar cambios */}
+            {!user?.defaultDeliveryAddress?.exactAddress && (
+              <div className='flex items-center gap-2 mt-2 bg-secondary/5 p-3 rounded-lg border border-secondary/10'>
                 <input 
-                  onChange={onChangeHandler} 
-                  value={formData.city} 
-                  type="text" 
-                  name='city' 
-                  placeholder='City *' 
-                  className={getInputClass('city')}
+                  type="checkbox" 
+                  id="saveToProfile" 
+                  checked={saveToProfile}
+                  onChange={(e) => setSaveToProfile(e.target.checked)}
+                  className='accent-secondary h-4 w-4 cursor-pointer'
                 />
-                {formErrors.city && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.city}</p>
-                )}
+                <label htmlFor="saveToProfile" className='text-sm text-gray-600 cursor-pointer select-none'>
+                  ¿Deseas guardar estos datos en tu perfil para futuros pedidos?
+                </label>
               </div>
-              <div className="flex-1">
-                <input 
-                  onChange={onChangeHandler} 
-                  value={formData.state} 
-                  type="text" 
-                  name='state' 
-                  placeholder='State *' 
-                  className={getInputClass('state')}
-                />
-                {formErrors.state && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.state}</p>
-                )}
-              </div>
-            </div>
-
-            <div className='flex gap-3'>
-              <div className="flex-1">
-                <input 
-                  onChange={onChangeHandler} 
-                  value={formData.zipcode} 
-                  type="text" 
-                  name='zipcode' 
-                  placeholder='Zip Code *' 
-                  className={getInputClass('zipcode')}
-                />
-                {formErrors.zipcode && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.zipcode}</p>
-                )}
-              </div>
-              <div className="flex-1">
-                <input 
-                  onChange={onChangeHandler} 
-                  value={formData.country} 
-                  type="text" 
-                  name='country' 
-                  placeholder='Country *' 
-                  className={getInputClass('country')}
-                />
-                {formErrors.country && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.country}</p>
-                )}
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Cart Total */}
-          <div className='flex flex-col flex-1'>
+          <div className='flex flex-col flex-1 gap-6'>
             <CartTotal />
             
-            {/* Métodos de Pago */}
-            <div className='my-6'>
-              <h3 className='mb-5 bold-20'>Payment <span className='text-secondary'>Method</span></h3>
-              <div className='flex gap-3'>
-                <button
-                  type="button"
-                  className={`${method === 'stripe' ? 'btn-secondary' : 'btn-light'} !p-1 text-xs cursor-pointer`}
-                  onClick={() => setMethod('stripe')}
-                >
-                  Stripe
-                </button>
-                <button
-                  type="button"
-                  className={`${method === 'cod' ? 'btn-secondary' : 'btn-light'} !p-1 !px-3 text-xs cursor-pointer`}
-                  onClick={() => setMethod('cod')}
-                >
-                  Cash on Delivery
-                </button>
-              </div>
+            <div className='p-4 bg-secondary/10 rounded-xl border border-secondary/10'>
+              <p className='text-sm text-gray-600'>
+                El pago se gestiona directamente por WhatsApp con nuestro equipo al recibir tu pedido.
+              </p>
             </div>
             
             <div>
               <button 
                 type='submit' 
-                className='btn-dark !rounded w-full flex justify-center items-center'
+                className='btn-dark !rounded-lg w-full flex justify-center items-center py-4 text-lg font-bold'
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
-                    <svg className="w-4 h-4 mr-2 -ml-1 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 mr-3 -ml-1 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     Procesando...
                   </>
-                ) : 'Place Order'}
+                ) : 'Confirmar Pedido vía WhatsApp'}
               </button>
             </div>
           </div>

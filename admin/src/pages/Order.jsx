@@ -280,7 +280,6 @@ const Order = ({ token, permissions }) => {
                       <div key={index} className="flex items-center gap-1 text-sm">
                         <span className="font-medium">{item.name}</span>
                         <span>× {item.quantity}</span>
-                        {item.size && <span className="text-xs bg-gray-100 px-1 rounded">Talla: {item.size}</span>}
                       </div>
                     ))}
                   </div>

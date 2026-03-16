@@ -107,7 +107,7 @@ const CreateUserPage = () => {
             className="w-full p-2 border rounded"
           >
             <option value="customer">Cliente</option>
-            <option value="manager">Manager</option>
+            <option value="moderator">Moderador</option>
             {user?.role === 'admin' && <option value="admin">Administrador</option>}
           </select>
         </div>

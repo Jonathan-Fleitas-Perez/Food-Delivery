@@ -23,36 +23,19 @@ const orderItemSchema = z.object({
 const addressSchema = z.object({
     firstName: z.string().min(1, "Nombre requerido"),
     lastName: z.string().min(1, "Apellido requerido"),
-    street: z.string().min(1, "Calle requerida"),
-    city: z.string().min(1, "Ciudad requerida"),
-    state: z.string().min(1, "Estado/provincia requerido"),
-    country: z.string().min(1, "País requerido"),
-    zipcode: z.string().min(1, "Código postal requerido"),
-    phone: z.string().min(1, "Teléfono requerido")
+    province: z.string().min(1, "Provincia requerida"),
+    municipality: z.string().min(1, "Municipio requerido"),
+    exactAddress: z.string().min(1, "Dirección exacta requerida")
 });
 
 // Esquema principal para crear pedido
 // En tus schemas/orderSchema.js
 export const createOrderSchema = z.object({
   userId: z.string().refine(val => mongoose.Types.ObjectId.isValid(val)), 
-  items: z.array(z.object({
-    name: z.string().min(3),
-    size: z.string().optional(),
-    quantity: z.number().int().positive(),
-    price: z.number().positive()
-  })),
+  items: z.array(orderItemSchema),
   amount: z.number().positive(),
-  address: z.object({
-    firstName: z.string().min(2),
-    lastName: z.string().min(2),
-    street: z.string().min(3),
-    city: z.string().min(2),
-    state: z.string().min(2),
-    country: z.string().min(2),
-    zipcode: z.string().min(4),
-    phone: z.string().min(8)
-  }),
-  paymentMethod: z.enum(['COD', 'Stripe'])
+  address: addressSchema,
+  paymentMethod: z.enum(['COD', 'Stripe', 'WhatsApp'])
 });
 
 // Esquema para actualizar pedido

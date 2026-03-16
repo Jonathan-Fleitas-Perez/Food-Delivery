@@ -117,7 +117,7 @@ const handleDBOperation = (operation) => async (req, res) => {
 export const addProduct =[
     checkControllerPermission('products', 'create'), 
     handleDBOperation(async (req) => {
-        const { name, description, category, prices, popular } = req.body;
+        const { name, description, category, price, popular } = req.body;
         const file = req.file;
         
         if (!file) {
@@ -129,53 +129,19 @@ export const addProduct =[
             folder: 'productos'
         });
         
-        // 2. Procesar precios (similar a updateProduct)
-        const priceObj = {};
-        const sizes = [];
-        
-        // Manejar diferentes formatos de precios
-        let pricesArray = [];
-        
-        if (Array.isArray(prices)) {
-            pricesArray = prices;
-        } else if (prices && typeof prices === 'object') {
-            // Convertir objeto a array: {S:10} -> [{size:'S', price:10}]
-            pricesArray = Object.entries(prices).map(([size, price]) => ({
-                size,
-                price: Number(price)
-            }));
-        } else {
-            throw new Error('Formato de precios inválido. Se esperaba array u objeto.');
+        // 2. Validar precio
+        const priceValue = Number(price);
+        if (isNaN(priceValue) || priceValue < 0) {
+            throw new Error('Precio inválido. Debe ser un número positivo.');
         }
-
-        // Validar precios
-        if (pricesArray.length === 0) {
-            throw new Error('Debe proporcionar al menos un tamaño con precio');
-        }
-
-        // Construir objeto de precios y lista de tamaños
-        pricesArray.forEach(item => {
-            if (!item.size || item.price === undefined) {
-                throw new Error('Cada precio debe tener "size" y "price"');
-            }
-            
-            const priceValue = Number(item.price);
-            if (isNaN(priceValue)) {
-                throw new Error(`Precio inválido para tamaño ${item.size}`);
-            }
-            
-            priceObj[item.size] = priceValue;
-            sizes.push(item.size);
-        });
 
         // 3. Crear producto
         const product = new productModel({
             name,
             description: description || '',
             category,
-            price: priceObj,
+            price: priceValue,
             popular: popular || false,
-            sizes,
             image: imageResult.secure_url,
             date: Date.now()
         });
@@ -191,7 +157,10 @@ export const addProduct =[
 // Listar TODOS los productos (sin paginación)
 export const listAllProducts = handleDBOperation(async () => {
   try {
-    const products = await productModel.find({});
+    const products = await productModel.find({}).populate({
+      path: 'ratings.userId',
+      select: 'avatar'
+    });
     return {
       success: true,
       products
@@ -224,62 +193,16 @@ export const updateProduct = async (req, res) => {
     }
     
 
-if (updateData.prices) {
-  try {
-    let parsedPrices = updateData.prices;
-
-    //  Parsear si es string
-    if (typeof parsedPrices === 'string') {
-      try {
-        parsedPrices = JSON.parse(parsedPrices);
-      } catch (parseError) {
-        throw new Error('JSON de precios inválido');
+    if (updateData.price) {
+      const priceValue = Number(updateData.price);
+      if (isNaN(priceValue) || priceValue < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Precio inválido'
+        });
       }
+      updateData.price = priceValue;
     }
-
-    //  Aceptar tanto arrays como objetos
-    let pricesArray = [];
-    if (Array.isArray(parsedPrices)) {
-      pricesArray = parsedPrices;
-    } else if (parsedPrices && typeof parsedPrices === 'object') {
-      // Convertir objeto a array: {small:10} -> [{size:'small', price:10}]
-      pricesArray = Object.entries(parsedPrices).map(([size, price]) => ({
-        size,
-        price: Number(price)
-      }));
-    } else {
-      throw new Error('Formato de precios inválido. Se esperaba array u objeto.');
-    }
-
-    // 3. Validar precios (no vacíos y válidos)
-    if (pricesArray.length === 0) {
-      throw new Error('Debe proporcionar al menos un tamaño con precio');
-    }
-
-    updateData.price = {};
-    updateData.sizes = [];
-
-    pricesArray.forEach(item => {
-      if (!item.size || item.price === undefined) {
-        throw new Error('Cada precio debe tener "size" y "price"');
-      }
-      const priceValue = Number(item.price);
-      if (isNaN(priceValue)) throw new Error(`Precio inválido para tamaño ${item.size}`);
-      
-      updateData.price[item.size] = priceValue;
-      updateData.sizes.push(item.size);
-    });
-
-    delete updateData.prices; // Eliminar campo temporal
-
-  } catch (error) {
-    console.error('Error procesando precios:', error);
-    return res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
-}
     
     // Actualizar producto
     const updatedProduct = await productModel.findByIdAndUpdate(
@@ -410,6 +333,65 @@ export const searchProducts = handleDBOperation(async (req) => {
 });
 
 
+// Controlador para calificar producto
+export const rateProduct = handleDBOperation(async (req) => {
+    const { productId } = req.params;
+    const { rating, comment } = req.body;
+    const userId = req.user.id;
+    const userName = req.user.name;
+
+    if (!rating || rating < 0 || rating > 5) {
+        throw new Error('Calificación inválida. Debe ser entre 0 y 5.');
+    }
+
+    const product = await productModel.findById(productId);
+    if (!product) {
+        throw new Error('Producto no encontrado');
+    }
+
+    // Comprobar si el usuario ya calificó el producto
+    const existingRatingIndex = product.ratings.findIndex(
+        (r) => r.userId?.toString() === userId.toString()
+    );
+
+    if (existingRatingIndex !== -1) {
+        // Actualizar calificación existente
+        product.ratings[existingRatingIndex].rating = Number(rating);
+        product.ratings[existingRatingIndex].comment = comment || '';
+        product.ratings[existingRatingIndex].date = Date.now();
+    } else {
+        // Agregar nueva calificación
+        product.ratings.push({
+            userId,
+            userName,
+            rating: Number(rating),
+            comment: comment || '',
+            date: Date.now()
+        });
+    }
+
+    // Recalcular el promedio y total
+    product.totalReviews = product.ratings.length;
+    const totalRatingSum = product.ratings.reduce((acc, curr) => acc + curr.rating, 0);
+    product.averageRating = Number((totalRatingSum / product.totalReviews).toFixed(1));
+
+    await product.save();
+
+    return {
+        success: true,
+        message: 'Producto calificado exitosamente',
+        product
+    };
+});
+
+// Contar reseñas totales
+const totalReviewsCount = handleDBOperation(async () => {
+    const result = await productModel.aggregate([
+      { $group: { _id: null, total: { $sum: '$totalReviews' } } }
+    ]);
+    return { success: true, total: result[0]?.total || 0 };
+});
+
 // Exporta todos los controladores
 export default {
     addProduct,
@@ -418,5 +400,7 @@ export default {
     singleProduct,
     listProduct,
     searchProducts,
-    listAllProducts  
+    listAllProducts,
+    rateProduct,
+    totalReviewsCount
 };

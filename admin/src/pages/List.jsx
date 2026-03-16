@@ -81,6 +81,17 @@ const List = ({ token, permissions }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${backendUrl}/api/category/list`);
+      if (response.data.success) {
+        setCategories(['all', ...response.data.data.map(c => c.name)]);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
   const fetchList = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -89,10 +100,6 @@ const List = ({ token, permissions }) => {
       if (response.data.success) {
         const products = response.data.products;
         setList(products);
-        
-        // Extraer categorías únicas
-        const uniqueCategories = [...new Set(products.map(p => p.category))];
-        setCategories(['all', ...uniqueCategories]);
       } else {
         toast.error(response.data.message);
       }
@@ -102,6 +109,10 @@ const List = ({ token, permissions }) => {
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
   }, []);
 
   // Aplicar filtros y búsqueda
@@ -131,10 +142,10 @@ const List = ({ token, permissions }) => {
         result.sort((a, b) => b.name.localeCompare(a.name));
         break;
       case 'price-asc':
-        result.sort((a, b) => getMinPrice(a.price) - getMinPrice(b.price));
+        result.sort((a, b) => a.price - b.price);
         break;
       case 'price-desc':
-        result.sort((a, b) => getMinPrice(b.price) - getMinPrice(a.price));
+        result.sort((a, b) => b.price - a.price);
         break;
       case 'newest':
         result.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -228,14 +239,6 @@ const List = ({ token, permissions }) => {
     setIsModalOpen(false);
   };
 
-  // Función para obtener el precio mínimo
-  const getMinPrice = (priceObj) => {
-    if (!priceObj || Object.keys(priceObj).length === 0) return 0;
-    
-    const prices = Object.values(priceObj).filter(price => !isNaN(price));
-    return prices.length > 0 ? Math.min(...prices) : 0;
-  };
-
   // Función para formatear precio
   const formatPrice = (price) => {
     return price > 0 ? currency + price : 'N/A';
@@ -305,7 +308,7 @@ const List = ({ token, permissions }) => {
           
           {/* Panel de filtros expandible */}
           {showFilters && (
-            <div className='grid grid-cols-1 gap-4 p-4 mt-2 rounded-md md:grid-cols-3 bg-gray-50'>
+            <div className='grid grid-cols-1 gap-4 p-4 mt-2 rounded-md md:grid-cols-3 bg-gray-5'>
               <div>
                 <label className='block mb-2 text-sm font-medium'>Categoría</label>
                 <select
@@ -345,7 +348,7 @@ const List = ({ token, permissions }) => {
                     setSortOption('name-asc');
                     setPage(1);
                   }}
-                  className='w-full px-4 py-2 transition-colors bg-gray-200 rounded-md hover:bg-gray-300'
+                  className='w-full px-4 py-2 transition-colors bg-gray-20 rounded-md hover:bg-gray-30'
                 >
                   Limpiar filtros
                 </button>
@@ -448,7 +451,7 @@ const List = ({ token, permissions }) => {
                   
                   <div className='flex items-center justify-between'>
                     <div className='text-base font-semibold'>
-                      {formatPrice(getMinPrice(item.price))}
+                      {formatPrice(item.price)}
                     </div>
                     
                     <div className='flex gap-2'>
@@ -500,7 +503,7 @@ const List = ({ token, permissions }) => {
                   <h5 className='text-sm font-semibold'>{item.name}</h5>
                   <p className='font-semibold'>{item.category}</p>
                   <div className='text-sm font-semibold'>
-                    {formatPrice(getMinPrice(item.price))}
+                    {formatPrice(item.price)}
                   </div>
 
                   {canUpdateProducts && (

@@ -1,4 +1,4 @@
-import  { useState, useEffect } from 'react';
+import  { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { backendUrl, currency } from '../App';
 import { 
@@ -23,21 +23,12 @@ ChartJS.register(
 const Dashboard = ({ token, permissions }) => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('30days');
+  const [timeRange, setTimeRange] = useState('1day');
   
   // Verificar permisos
   const canViewDashboard = permissions.includes('dashboard:read');
 
-  useEffect(() => {
-    if (!canViewDashboard) {
-      setLoading(false);
-      return;
-    }
-
-    fetchDashboardData();
-  }, [token, timeRange]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${backendUrl}/api/dashboard/stats?range=${timeRange}`, {
@@ -55,7 +46,16 @@ const Dashboard = ({ token, permissions }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, timeRange]);
+
+  useEffect(() => {
+    if (!canViewDashboard) {
+      setLoading(false);
+      return;
+    }
+
+    fetchDashboardData();
+  }, [canViewDashboard, fetchDashboardData]);
 
   // Preparar datos para gráficos
   const prepareChartData = () => {
@@ -191,9 +191,9 @@ const Dashboard = ({ token, permissions }) => {
             onChange={(e) => setTimeRange(e.target.value)}
             className="p-2 border rounded-md"
           >
+            <option value="1day">Último día</option>
             <option value="7days">Últimos 7 días</option>
             <option value="30days">Últimos 30 días</option>
-            <option value="90days">Últimos 90 días</option>
           </select>
           <button 
             onClick={fetchDashboardData}

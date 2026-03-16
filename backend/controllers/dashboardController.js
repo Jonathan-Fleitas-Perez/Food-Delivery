@@ -4,8 +4,24 @@ import userModel from '../models/userModel.js';
 
 export const getDashboardStats = async (req, res) => {
   try {
-    // Estadísticas de órdenes
+    const range = req.query.range || '30days';
+    let daysToSubtract = 30;
+    if (range === '1day') daysToSubtract = 1;
+    else if (range === '7days') daysToSubtract = 7;
+    else if (range === '90days') daysToSubtract = 90;
+    
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0); // Inicio del día actual
+    if (range !== '1day') {
+      startDate.setDate(startDate.getDate() - daysToSubtract);
+    }
+    const startTime = startDate.getTime();
+
+    const dateMatch = { date: { $gte: startTime } };
+
+    // Estadísticas de órdenes (Filtrado)
     const ordersStats = await orderModel.aggregate([
+      { $match: dateMatch },
       {
         $group: {
           _id: null,
@@ -18,18 +34,21 @@ export const getDashboardStats = async (req, res) => {
       }
     ]);
 
-    // Órdenes por estado
+    // Órdenes por estado (Filtrado)
     const ordersByStatus = await orderModel.aggregate([
+      { $match: dateMatch },
       { $group: { _id: "$status", count: { $sum: 1 } } }
     ]);
 
-    // Métodos de pago
+    // Métodos de pago (Filtrado)
     const paymentMethods = await orderModel.aggregate([
+      { $match: dateMatch },
       { $group: { _id: "$paymentMethod", count: { $sum: 1 } } }
     ]);
 
-    // Ventas por categoría de producto
+    // Ventas por categoría de producto (Filtrado)
     const salesByCategory = await orderModel.aggregate([
+      { $match: dateMatch },
       { $unwind: "$items" },
       {
         $lookup: {
@@ -44,14 +63,16 @@ export const getDashboardStats = async (req, res) => {
         $group: {
           _id: "$productDetails.category",
           totalSales: { $sum: { $multiply: ["$items.quantity", "$items.price"] } },
+          totalRevenue: { $sum: { $multiply: ["$items.quantity", { $ifNull: ["$items.price", 0] }] } },
           count: { $sum: "$items.quantity" }
         }
       },
       { $sort: { totalSales: -1 } }
     ]);
 
-    // Productos más vendidos
+    // Productos más vendidos (Filtrado)
     const topProducts = await orderModel.aggregate([
+      { $match: dateMatch },
       { $unwind: "$items" },
       {
         $group: {
@@ -64,8 +85,9 @@ export const getDashboardStats = async (req, res) => {
       { $limit: 5 }
     ]);
 
-    // Usuarios con más compras
+    // Usuarios con más compras (Filtrado)
     const topCustomers = await orderModel.aggregate([
+      { $match: dateMatch },
       {
         $group: {
           _id: "$userId",
@@ -77,31 +99,28 @@ export const getDashboardStats = async (req, res) => {
       { $limit: 5 },
       {
         $lookup: {
-          from: "usuarios",
+          from: "usuarios", // Ajustar según el nombre real de la colección si es necesario
           localField: "_id",
           foreignField: "_id",
           as: "user"
         }
       },
-      { $unwind: "$user" },
+      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
       {
         $project: {
           _id: 0,
           userId: "$_id",
-          name: "$user.name",
-          email: "$user.email",
+          name: { $ifNull: ["$user.name", "Usuario Desconocido"] },
+          email: { $ifNull: ["$user.email", "N/A"] },
           totalOrders: 1,
           totalSpent: 1
         }
       }
     ]);
 
-    // Tendencias de ventas (últimos 30 días)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+    // Tendencias de ventas
     const salesTrend = await orderModel.aggregate([
-      { $match: { date: { $gte: thirtyDaysAgo.getTime() } } },
+      { $match: dateMatch },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: { $toDate: "$date" } } },

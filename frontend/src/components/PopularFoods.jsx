@@ -7,14 +7,14 @@ const PopularFoods = () => {
   const [popularFoods, setpopularFoods] = useState([]);
   const {foods} = useContext(ShopConstest);
 
-  useEffect(()=>{
-    const data = foods.filter(item=>item.popular)
-    setpopularFoods(data.slice(0,5));
-  },[foods]);
+  useEffect(() => {
+    const data = [...foods].sort((a, b) => b.averageRating - a.averageRating);
+    setpopularFoods(data.slice(0, 5));
+  }, [foods]);
 
   return (
     <section className='max-padd-container py-16'>
-      <Tittle title1={'Popular'} title2={'Foods'} titleStyles={'text-center !pb-20'} paraStyle={'!block'}/>
+      <Tittle title1={'Comidas'} title2={' Populares'} titleStyles={'text-center !pb-20'} paraStyle={'!block'}/>
       
       {/*COntainer */}
       <div className='grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 gap-y-36 pt-20'>

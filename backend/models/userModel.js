@@ -7,8 +7,18 @@ const userSchema = new mongoose.Schema({
     cartData: { type: Object, default: {} },
     role: { 
         type: String, 
-        enum: ['customer','manager' ,'admin'], 
+        enum: ['customer','moderator' ,'admin'], 
         default: 'customer'
+    },
+    avatar: { 
+        type: String, 
+        default: "" 
+    },
+    defaultDeliveryAddress: {
+        province: { type: String, default: "La Habana" },
+        municipality: { type: String, default: "" },
+        municipalityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Municipality' },
+        exactAddress: { type: String, default: "" }
     },
     lastLogin: { type: Date },
     createdAt: { 
@@ -23,12 +33,14 @@ userSchema.statics.getRolePermissions = function() {
       'products:create', 'products:read', 'products:update', 'products:delete','products:view',
       'orders:create', 'orders:read', 'orders:update', 'orders:delete','orders:view',
       'users:create', 'users:read', 'users:update', 'users:delete','users:view',
+      'categories:create', 'categories:read', 'categories:update', 'categories:delete',
       'dashboard:read'
     ],
-    manager: [
-      'products:create', 'products:read', 'products:update','products:view',
-      'orders:create', 'orders:view', 'orders:update','orders:read',
-      'users:read','users:view',
+    moderator: [
+      'products:create', 'products:read', 'products:update', 'products:delete', 'products:view',
+      'orders:create', 'orders:read', 'orders:update', 'orders:view',
+      'users:create', 'users:read', 'users:update', 'users:view',
+      'categories:create', 'categories:read', 'categories:update', 'categories:delete',
       'dashboard:read'
     ],
     customer: [

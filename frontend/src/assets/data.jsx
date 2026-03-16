@@ -56,7 +56,7 @@ import food_48 from './food_48.png'
 
 export const categories = [
   {
-    name: "Curry",
+    name: "Guisos",
     image: curry,
   },
   {
@@ -64,19 +64,19 @@ export const categories = [
     image: pizza,
   },
   {
-    name: "Rice",
+    name: "Arroces",
     image: rice,
   },
   {
-    name: "Deserts",
+    name: "Postres",
     image: deserts,
   },
   {
-    name: "Drinks",
+    name: "Bebidas",
     image: drinks,
   },
   {
-    name: "Fruits",
+    name: "Frutas",
     image: fruits,
   },
 ];
@@ -676,30 +676,30 @@ export const foods = [
 // FOOTER SECTION
 export const FOOTER_LINKS = [
   {
-    title: "Learn More",
+    title: "Conoce Más",
     links: [
-      "About Us",
-      "Fresh Foods",
-      "Fast Foods",
-      "Hot Deals",
-      "Popular Foods",
-      "FAQ",
+      "Sobre Nosotros",
+      "Comida Fresca",
+      "Entregas Rápidas",
+      "Ofertas Especiales",
+      "Platos Populares",
+      "Preguntas Frecuentes",
     ],
   },
   {
-    title: "Our Community",
+    title: "Nuestra Comunidad",
     links: [
-      "Terms and Conditions",
-      "Special Offers",
-      "Customer Reviews",
+      "Términos y Condiciones",
+      "Eventos Locales",
+      "Reseñas de Clientes",
     ],
   },
 ];
 
 export const FOOTER_CONTACT_INFO = {
-  title: "Contact Us",
+  title: "Contáctanos",
   links: [
-    { label: "Contact Number", value: "123-456-7890" },
-    { label: "Email Address", value: "info@foodora.com" },
+    { label: "Teléfono", value: "+53 5 123 4567" },
+    { label: "Correo Electrónico", value: "info@sudysfood.cu" },
   ],
 };

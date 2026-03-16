@@ -61,7 +61,7 @@
 
 @layer utilities {
   .active-link {
-    @apply text-secondary relative after:w-1.5 after:h-1.5 after:rounded-full after:bg-secondary after:absolute after:-bottom-2.5 after:left-[7px] ;
+    @apply text-secondary border-b-2 border-secondary transition-all duration-300;
   }
 
   .hide-scrollbar {

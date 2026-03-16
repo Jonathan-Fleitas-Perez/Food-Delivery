@@ -14,7 +14,6 @@ const orderSchema = new mongoose.Schema({
         required: true,
         min: [1, "Cantidad debe ser al menos 1"]
       },
-      size: String,
       // CAMBIAR DE OBJECT A NUMBER
       price: { type: Number, required: true }
     }],
@@ -32,12 +31,9 @@ const orderSchema = new mongoose.Schema({
     type: {
       firstName: { type: String, required: [true, "Nombre requerido"] },
       lastName: { type: String, required: [true, "Apellido requerido"] },
-      street: { type: String, required: [true, "Calle requerida"] },
-      city: { type: String, required: [true, "Ciudad requerida"] },
-      state: { type: String, required: [true, "Estado/provincia requerido"] },
-      country: { type: String, required: [true, "País requerido"] },
-      zipcode: { type: String, required: [true, "Código postal requerido"] },
-      phone: { type: String, required: [true, "Teléfono requerido"] }
+      province: { type: String, required: [true, "Provincia requerida"] },
+      municipality: { type: String, required: [true, "Municipio requerido"] },
+      exactAddress: { type: String, required: [true, "Dirección exacta requerida"] }
     },
     required: true
   },
@@ -61,7 +57,7 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: {
     type: String,
     required: true,
-    enum: ['COD', 'Stripe']
+    enum: ['COD', 'Stripe', 'WhatsApp']
   },
   payment: {
     type: Boolean,

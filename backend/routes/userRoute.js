@@ -5,15 +5,21 @@ import {
   deleteUser,
   loginUser,
   updateUserByAdmin,
-  registerUser
+  registerUser,
+  updateProfile,
+  refreshToken,
+  logoutUser
 } from '../controllers/userController.js';
 import { authenticateUser, canCreateUsers, canDeleteUsers, canReadUsers, canUpdateUsers, checkPermission } from '../middleware/authMiddleware.js';
+import upload from '../middleware/multer.js';
 
 const UserRouter = express.Router();
 
 // 1. Ruta pública para login
 UserRouter.post('/login', loginUser);
-UserRouter.post('/register',registerUser)
+UserRouter.post('/register',registerUser);
+UserRouter.post('/refresh', refreshToken);
+UserRouter.post('/logout', logoutUser);
 
 // Rutas específicas con permisos
 UserRouter.get('/list',
@@ -40,6 +46,12 @@ UserRouter.delete('/:id',
   authenticateUser,
   canDeleteUsers,
   deleteUser
+);
+
+UserRouter.put('/profile/update',
+  authenticateUser,
+  upload.single('image'),
+  updateProfile
 );
 
 export default UserRouter;

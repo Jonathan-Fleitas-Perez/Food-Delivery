@@ -68,7 +68,7 @@ const Orders = () => {
     return (
       <section className='mt-24 max-padd-container'>
         <div className='pt-6 pb-20'>
-          <Tittle title1={'Order'} title2={'List'} paraStyle={'h3'} />
+          <Tittle title1={'Mis'} title2={'Pedidos'} paraStyle={'h3'} />
           <div className="flex justify-center py-10">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           </div>
@@ -81,7 +81,7 @@ const Orders = () => {
     return (
       <section className='mt-24 max-padd-container'>
         <div className='pt-6 pb-20'>
-          <Tittle title1={'Order'} title2={'List'} paraStyle={'h3'} />
+          <Tittle title1={'Mis '} title2={'Pedidos'} paraStyle={'h3'} />
           <div className="text-center py-10">
             <p className="text-gray-500 text-lg">No tienes órdenes registradas</p>
             <button 
@@ -98,16 +98,16 @@ const Orders = () => {
   }
 
   return (
-    <section className='mt-24 max-padd-container'>
+    <section className='max-padd-container'>
       <div className='pt-6 pb-20'>
-        <Tittle title1={'Order'} title2={'List'} paraStyle={'h3'} />
+        <Tittle title1={'Mis '} title2={'Pedidos'} paraStyle={'h3'} />
 
         {orderData.map((order, i) => (
           <div key={i} className='p-4 mt-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow'>
             <div className='flex flex-col gap-4 text-gray-700'>
               <div className='flex justify-between items-center border-b pb-2'>
                 <div>
-                  <h5 className='font-semibold'>Orden #: {order._id.slice(-8).toUpperCase()}</h5>
+                  <h5 className='font-semibold text-sm sm:text-base'>Orden #: {order._id.slice(-8).toUpperCase()}</h5>
                   <p className='text-sm text-gray-500'>Fecha: {order.date}</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -154,8 +154,8 @@ const Orders = () => {
               <div className='flex justify-between items-center pt-2'>
                 <div className='text-sm'>
                   <p className='font-medium'>Dirección:</p>
-                  <p className='text-gray-600'>
-                    {order.address.street}, {order.address.city}, {order.address.country}
+                  <p className='text-gray-600 text-sm'>
+                    {order.address?.municipality || order.address?.city || ''}{order.address?.exactAddress ? `, ${order.address.exactAddress}` : order.address?.street ? `, ${order.address.street}` : ''}
                   </p>
                 </div>
                 <div className='text-right'>
@@ -167,7 +167,6 @@ const Orders = () => {
           </div>
         ))}
       </div>
-      <Footer />
     </section>
   )
 }

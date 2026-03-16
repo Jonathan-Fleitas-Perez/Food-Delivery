@@ -52,7 +52,8 @@ const Login = ({ settoken }) => {
         const role = payload.role || 'customer'
         
         // Verificar si el usuario tiene acceso al panel admin
-        if (role === 'admin' || role === 'manager') {
+        if (role === 'admin' || role === 'moderator') {
+          // El token ahora se maneja vía cookies, mantenemos estado local para UI
           settoken(token)
           toast.success(`Bienvenido, ${payload.name || 'Administrador'}`)
         } else {

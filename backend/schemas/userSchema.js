@@ -24,14 +24,14 @@ export const userCreateByAdminSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }),
   email: z.string().email({ message: "Email inválido" }),
   password: z.string().min(8, { message: "La contraseña debe tener al menos 8 caracteres" }),
-  role: z.enum(['customer', 'manager', 'admin'], {
-    message: "Rol inválido. Debe ser customer, manager o admin"
+  role: z.enum(['customer', 'moderator', 'admin'], {
+    message: "Rol inválido. Debe ser customer, moderator o admin"
   })
 });
 
 export const userUpdateRoleSchema = z.object({
-  role: z.enum(['customer', 'manager', 'admin'], {
-    message: "Rol inválido. Debe ser customer, manager o admin"
+  role: z.enum(['customer', 'moderator', 'admin'], {
+    message: "Rol inválido. Debe ser customer, moderator o admin"
   })
 });
 
@@ -39,8 +39,8 @@ export const userUpdateByAdminSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres" }).optional(),
   email: z.string().email({ message: "Email inválido" }).optional(),
   password: z.string().min(8, { message: "La contraseña debe tener al menos 8 caracteres" }).optional(),
-  role: z.enum(['customer', 'manager', 'admin'], {
-    message: "Rol inválido. Debe ser customer, manager o admin"
+  role: z.enum(['customer', 'moderator', 'admin'], {
+    message: "Rol inválido. Debe ser customer, moderator o admin"
   }).optional()
 }).refine(data => Object.keys(data).length > 0, {
   message: "Debe proporcionar al menos un campo para actualizar"

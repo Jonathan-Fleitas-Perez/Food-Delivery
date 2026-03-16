@@ -13,8 +13,8 @@ import {
 } from '../schemas/orderSchema.js';
 import mongoose from 'mongoose';
 
-const currency = 'pkr';
-const Delivery_Charges = 10;
+const currency = 'cup';
+const Delivery_Charges = 0; // Se calcula dinámicamente por municipio
 
 // Middleware de validación mejorado
 export const validateSchema = (schema) => async (req, res, next) => {
@@ -150,8 +150,8 @@ const placeOrder = [
     const newOrder = new orderModel(orderData);
     await newOrder.save();
     
-    // Vaciar carrito solo si es COD
-    if (paymentMethod === 'COD') {
+    // Vaciar carrito para COD o WhatsApp
+    if (paymentMethod === 'COD' || paymentMethod === 'WhatsApp') {
       await userModel.findByIdAndUpdate(userId, { cartData: {} });
     }
 
