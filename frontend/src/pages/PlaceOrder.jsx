@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 import { z } from 'zod';
 
 const PlaceOrder = () => {
-  const { navigate, backendUrl, cartItems, setCartItems, user, foods, token, setDeliveryCharges, deliveryCharges } = useContext(ShopConstest);
+  const { navigate, backendUrl, cartItems, setCartItems, user, foods, token, setDeliveryCharges, deliveryCharges, getUserProfile } = useContext(ShopConstest);
   const [municipalities, setMunicipalities] = useState([]);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -21,7 +21,7 @@ const PlaceOrder = () => {
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Cargar Municipios
+  // Cargar Municipios y Pre-llenado inicial
   React.useEffect(() => {
     const fetchMunicipalities = async () => {
         try {
@@ -37,18 +37,19 @@ const PlaceOrder = () => {
     fetchMunicipalities();
   }, [backendUrl]);
 
-  // Si el usuario tiene una dirección guardada
+  // Si el usuario tiene información guardada, pre-llenar SOLO una vez al cargar el componente
+  // o cuando el objeto user esté disponible por primera vez.
   React.useEffect(() => {
-     if (user) {
+     if (user && !formData.firstName && !formData.lastName) {
          setFormData(prev => ({
              ...prev,
-             firstName: prev.firstName || (user.name ? user.name.split(' ')[0] : ''),
-             lastName: prev.lastName || (user.name ? user.name.split(' ').slice(1).join(' ') : ''),
-             municipality: prev.municipality || (user.defaultDeliveryAddress?.municipality || ''),
-             exactAddress: prev.exactAddress || (user.defaultDeliveryAddress?.exactAddress || '')
+             firstName: user.name ? user.name.split(' ')[0] : '',
+             lastName: user.name ? user.name.split(' ').slice(1).join(' ') : '',
+             municipality: user.defaultDeliveryAddress?.municipality || '',
+             exactAddress: user.defaultDeliveryAddress?.exactAddress || ''
          }));
      }
-  }, [user]);
+  }, [user, formData.firstName, formData.lastName]);
 
   // Actualizar costo de envío al cambiar el municipio
   React.useEffect(() => {
@@ -119,6 +120,7 @@ const PlaceOrder = () => {
     // Si el usuario marcó guardar en el perfil
     if (saveToProfile) {
       const profileData = new FormData();
+      // Si el nombre cambió, lo enviamos. Si no, mantenemos el actual.
       profileData.append('name', `${formData.firstName} ${formData.lastName}`);
       profileData.append('address', JSON.stringify({
         province: formData.province,
@@ -127,8 +129,15 @@ const PlaceOrder = () => {
       }));
 
       await axios.put(`${backendUrl}/api/user/profile/update`, profileData, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'token': token // Por si acaso el middleware usa este header
+        }
       });
+      // Importante: Actualizar el contexto con los nuevos datos
+      if (typeof getUserProfile === 'function') {
+        await getUserProfile(token);
+      }
     }
 
     let orderItems = [];
@@ -299,9 +308,8 @@ const PlaceOrder = () => {
               )}
             </div>
 
-            {/* Checkbox informativo de guardar cambios */}
-            {!user?.defaultDeliveryAddress?.exactAddress && (
-              <div className='flex items-center gap-2 mt-2 bg-secondary/5 p-3 rounded-lg border border-secondary/10'>
+            {/* Checkbox informativo de guardar cambios - Siempre visible si hay cambios o si no hay dirección */}
+            <div className='flex items-center gap-2 mt-2 bg-secondary/5 p-3 rounded-lg border border-secondary/10'>
                 <input 
                   type="checkbox" 
                   id="saveToProfile" 
@@ -313,7 +321,6 @@ const PlaceOrder = () => {
                   ¿Deseas guardar estos datos en tu perfil para futuros pedidos?
                 </label>
               </div>
-            )}
           </div>
 
           {/* Cart Total */}

@@ -38,17 +38,6 @@ const ShopContextProvider = (props) => {
     );
   }, []);
 
-  const decodeToken = useCallback((token) => {
-    try {
-      if (!token) return null;
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      return JSON.parse(atob(base64));
-    } catch (error) {
-      console.error("Error decoding token:", error);
-      return null;
-    }
-  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -123,26 +112,44 @@ const ShopContextProvider = (props) => {
     }
   }, [backendUrl]);
 
-  const login = useCallback((token) => {
+  const getUserProfile = useCallback(async (authToken) => {
+    try {
+      const currentToken = authToken || token;
+      if (!currentToken) return;
+
+      const response = await axios.get(`${backendUrl}/api/user/profile`, {
+        headers: { Authorization: `Bearer ${currentToken}` }
+      });
+
+      if (response.data.success) {
+        const userData = response.data.user;
+        setUser({
+          id: userData._id,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          avatar: userData.avatar || "",
+          defaultDeliveryAddress: userData.defaultDeliveryAddress || null
+        });
+        setPermissions(userData.permissions || []);
+      }
+    } catch (error) {
+      console.error('Error al obtener perfil de usuario:', error);
+      // No cerramos sesión aquí para evitar bucles si hay error de red temporal
+    }
+  }, [backendUrl, token]);
+
+  const login = useCallback(async (token) => {
     localStorage.setItem('token', token);
     setToken(token);
-    const decoded = decodeToken(token);
     
-    if (decoded) {
-      setUser({
-        id: decoded.id,
-        name: decoded.name,
-        email: decoded.email,
-        role: decoded.role,
-        avatar: decoded.avatar || "",
-      });
-      setPermissions(decoded.permissions || []);
-      getUserCart(token);
-    }
+    // Obtener perfil completo inmediatamente
+    await getUserProfile(token);
+    await getUserCart(token);
     
     navigate('/');
     toast.success('¡Bienvenido!');
-  }, [navigate, getUserCart, decodeToken]);
+  }, [navigate, getUserCart, getUserProfile]);
 
   // --- 2. Efectos (useEffect) ---
 
@@ -156,7 +163,9 @@ const ShopContextProvider = (props) => {
           try {
             const response = await axios.post(`${backendUrl}/api/user/refresh`);
             if (response.data.success) {
-              setToken(response.data.token);
+              const newToken = response.data.token;
+              setToken(newToken);
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
               return axios(originalRequest);
             }
           } catch (refreshError) {
@@ -179,32 +188,22 @@ const ShopContextProvider = (props) => {
       // 2. Cargar usuario si hay token
       let userPromise = Promise.resolve();
       if (token) {
-        const decoded = decodeToken(token);
-        if (decoded && decoded.exp * 1000 > Date.now()) {
-          setUser({
-            id: decoded.id,
-            name: decoded.name,
-            email: decoded.email,
-            role: decoded.role,
-            avatar: decoded.avatar || "",
-          });
-          setPermissions(decoded.permissions || []);
-          userPromise = getUserCart(token);
-        } else {
-          logout();
-        }
+        // En vez de decodificar localmente, traemos el perfil fresco del servidor
+        userPromise = Promise.all([
+          getUserProfile(token),
+          getUserCart(token)
+        ]);
       }
       
       // Esperar a que todo lo esencial termine
       await Promise.all([productsPromise, categoriesPromise, userPromise]);
       
       // Verificamos si las imágenes ya se marcaron como cargadas (dentro de getProductsData)
-      // Si por alguna razón no se han cargado tras un tiempo prudencial, soltamos la pantalla
       setIsLoading(false);
     };
 
     initApp();
-  }, [token, decodeToken, logout, getProductsData, getCategoriesData, getUserCart]);
+  }, [token, getProductsData, getCategoriesData, getUserCart, getUserProfile]);
 
   // --- 3. Resto de la lógica ---
 
@@ -319,6 +318,7 @@ const ShopContextProvider = (props) => {
     login,
     logout,
     hasPermission,
+    getUserProfile,
     refreshFoods: getProductsData
   };
 

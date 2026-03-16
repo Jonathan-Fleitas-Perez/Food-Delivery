@@ -309,22 +309,49 @@ const deleteUser = [
   })
 ];
 
-// Obtener usuario actual
-const getCurrentUser = handleDBOperation(async (req, res) => {
-  const user = await userModel.findById(req.validatedData.id).select('-password -__v');
-  
-  if (!user) {
-    throw new Error('Usuario no encontrado');
-  }
-  
-  return { 
-    success: true, 
-    user: {
-      ...user.toObject(),
-      permissions: user.permissions || []
+// Obtener perfil del usuario autenticado (para ShopContext)
+const getProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await userModel.findById(userId).select('-password -__v');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Usuario no encontrado" });
     }
-  };
-});
+    
+    res.json({ 
+      success: true, 
+      user: {
+        ...user.toObject(),
+        permissions: user.permissions || []
+      }
+    });
+  } catch (error) {
+    console.error('Error al obtener perfil:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Obtener un usuario por ID (para administración)
+const getCurrentUser = [
+  validateSchema(userIdParamSchema),
+  handleDBOperation(async (req, res) => {
+    const { id } = req.validatedData;
+    const user = await userModel.findById(id).select('-password -__v');
+    
+    if (!user) {
+      throw new Error('Usuario no encontrado');
+    }
+    
+    return { 
+      success: true, 
+      user: {
+        ...user.toObject(),
+        permissions: user.permissions || []
+      }
+    };
+  })
+];
 
 // Actualizar perfil de usuario
 const updateUserByAdmin = 
@@ -464,9 +491,10 @@ export {
   deleteUser, 
   getAllUsers, 
   updateUserRole,
-  getCurrentUser,
   updateUserByAdmin,
   updateProfile,
+  getProfile,
+  getCurrentUser,
   refreshToken,
   logoutUser
 };
