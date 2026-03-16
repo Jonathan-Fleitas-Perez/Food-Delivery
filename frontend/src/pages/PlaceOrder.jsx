@@ -346,8 +346,6 @@ const PlaceOrder = () => {
           </div>
         </div>
       </form>
-
-      <Footer />
     </section>
   );
 };
