@@ -21,8 +21,22 @@ const ShopContextProvider = (props) => {
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   // --- 1. Definición de Funciones (useCallback) ---
+
+  const preloadImages = useCallback((urls) => {
+    return Promise.all(
+      urls.map((url) => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.src = url;
+          img.onload = resolve;
+          img.onerror = resolve; // Continuar de todos modos si falla
+        });
+      })
+    );
+  }, []);
 
   const decodeToken = useCallback((token) => {
     try {
@@ -65,15 +79,30 @@ const ShopContextProvider = (props) => {
     try {
       const response = await axios.get(`${backendUrl}/api/product/list/all`);
       if (response.data.success) {
-        setFoods(response.data.products);
+        const products = response.data.products;
+        setFoods(products);
+        
+        // Precargar imágenes de productos y activos críticos (logo, hero bg)
+        const imagesToPreload = [
+          '/logo.png',
+          '/src/assets/bg.png',
+          ...products.slice(0, 8).map(product => product.image)
+        ].filter(url => !!url);
+        
+        if (imagesToPreload.length > 0) {
+          await preloadImages(imagesToPreload);
+        }
+        setImagesLoaded(true);
       } else {
         toast.error(response.data.message);
+        setImagesLoaded(true); // Desbloquear si falla
       }
     } catch (error) {
       console.error('Error obteniendo productos:', error);
       toast.error(error.response?.data?.message || 'Error al cargar productos');
+      setImagesLoaded(true); // Desbloquear si falla
     }
-  }, [backendUrl]);
+  }, [backendUrl, preloadImages]);
 
   const getUserCart = useCallback(async (token) => {
     try {
@@ -142,7 +171,13 @@ const ShopContextProvider = (props) => {
   }, [token, backendUrl, logout]);
 
   useEffect(() => {
-    const loadUser = () => {
+    const initApp = async () => {
+      // 1. Cargar datos básicos de productos y categorías
+      const productsPromise = getProductsData();
+      const categoriesPromise = getCategoriesData();
+      
+      // 2. Cargar usuario si hay token
+      let userPromise = Promise.resolve();
       if (token) {
         const decoded = decodeToken(token);
         if (decoded && decoded.exp * 1000 > Date.now()) {
@@ -154,17 +189,21 @@ const ShopContextProvider = (props) => {
             avatar: decoded.avatar || "",
           });
           setPermissions(decoded.permissions || []);
-          getUserCart(token);
+          userPromise = getUserCart(token);
         } else {
           logout();
         }
       }
+      
+      // Esperar a que todo lo esencial termine
+      await Promise.all([productsPromise, categoriesPromise, userPromise]);
+      
+      // Verificamos si las imágenes ya se marcaron como cargadas (dentro de getProductsData)
+      // Si por alguna razón no se han cargado tras un tiempo prudencial, soltamos la pantalla
       setIsLoading(false);
     };
 
-    loadUser();
-    getProductsData();
-    getCategoriesData();
+    initApp();
   }, [token, decodeToken, logout, getProductsData, getCategoriesData, getUserCart]);
 
   // --- 3. Resto de la lógica ---
@@ -276,7 +315,7 @@ const ShopContextProvider = (props) => {
     user,
     setUser,
     permissions,
-    isLoading,
+    isLoading: isLoading || !imagesLoaded,
     login,
     logout,
     hasPermission,

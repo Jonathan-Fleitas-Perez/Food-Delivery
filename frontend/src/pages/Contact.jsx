@@ -23,12 +23,12 @@ const About = () => {
             que solo se encuentra en las cocinas cubanas.
           </p>
           <p className="text-gray-700 text-base sm:text-lg leading-relaxed mb-6">
-            Desde la clásica ropa vieja hasta los postres más dulces, cada plato que preparamos 
-            lleva un pedacito de nuestra cultura y tradición. Creemos que la buena comida es la mejor 
+            Cada plato que preparamos leva un pedacito de nuestra cultura y tradición.
+            Creemos que la buena comida es la mejor 
             forma de unir a las personas, y eso es exactamente lo que hacemos todos los días.
           </p>
           <p className="text-gray-600 text-sm italic">
-            "La comida cubana no es solo alimento, es identidad." 🇨🇺
+            "La comida cubana no es solo alimento, es identidad."
           </p>
         </div>
       </div>
@@ -66,7 +66,7 @@ const About = () => {
               <FaStar className="text-secondary text-xl" />
             </div>
             <h4 className="font-bold text-lg mb-2">Sabroso</h4>
-            <p className="text-gray-600 text-sm">Ese toquecito de la abuela que hace especial cada bocado.</p>
+            <p className="text-gray-600 text-sm">Ese sabor de nuestro sazón que hace especial cada bocado.</p>
           </div>
         </div>
       </div>

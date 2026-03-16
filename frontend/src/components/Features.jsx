@@ -24,7 +24,7 @@ const Features = () => {
             <h5 className='h5'>Recién Hechecito</h5>
             <hr  className='w-8 bg-secondary h-1 rounded-full border-none'/>
           </div>
-          <p className='text-center'>Disfruta tu comida calientita, como recién sacada del fogón de leña</p>
+          <p className='text-center'>Disfruta tu comida calientita, como recién sacada del fogón</p>
         </div>
 
 

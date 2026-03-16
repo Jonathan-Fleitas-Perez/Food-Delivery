@@ -36,7 +36,7 @@ const Hero = () => {
       <div className='relative bg-hero bg-cover bg-center bg-no-repeat h-[811px] w-full'>
         <div className='max-padd-container relative top-28 sm:top-36 md:top-72 text-white px-4'>
           <h1 className='h1 max-w-[44rem] capitalize text-3xl sm:text-4xl md:text-5xl'>Comida con sazón cubano directo <span className='text-secondary'>a tu puerta</span></h1>
-          <p className='text-white regular-16 mt-6 max-w-[33rem] text-sm sm:text-base'>¡Asere, qué bolá! Bienvenido a Sudy's Food, donde el sabor criollo se encuentra con la calidad. Disfruta de la mejor comida típica cubana hecha con pasión y ese toquecito de la abuela. Desde unas buenas masitas de cerdo frita hasta la mejor ropita vieja de La Habana. ¡Déjanos quitarte el hambre con puro sabor!</p>
+          <p className='text-white regular-16 mt-6 max-w-[33rem] text-sm sm:text-base'>¡Asere, qué bolá! Bienvenido a Sudy's Food, donde el sabor criollo se encuentra con la calidad. Disfruta de la mejor comida típica cubana hecha con pasión y ese toquecito de nuestro sazón que nunca olvidarás. ¡Déjanos quitarte el hambre con puro sabor!</p>
         
           <div className='flexStart !items-center gap-x-4 my-10'>
             <div className='flex relative'>
