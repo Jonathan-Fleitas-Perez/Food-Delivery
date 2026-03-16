@@ -50,6 +50,7 @@ const Orders = () => {
 
   useEffect(() => {
     loadOrderData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   const getStatusColor = (status) => {

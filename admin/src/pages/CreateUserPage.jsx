@@ -1,12 +1,10 @@
 // pages/CreateUserPage.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { backendUrl } from '../App';
 
-const CreateUserPage = () => {
+const CreateUserPage = ({ userRole }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -108,7 +106,7 @@ const CreateUserPage = () => {
           >
             <option value="customer">Cliente</option>
             <option value="moderator">Moderador</option>
-            {user?.role === 'admin' && <option value="admin">Administrador</option>}
+            {userRole === 'admin' && <option value="admin">Administrador</option>}
           </select>
         </div>
         

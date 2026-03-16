@@ -15,12 +15,14 @@ import Categories from './pages/Categories'
 import Unauthorized from './components/Unauthorized'
 import Offers from './pages/Offers'
 import axios from 'axios'
+import LoadingScreen from './components/LoadingScreen'
 
 axios.defaults.withCredentials = true;
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const backendUrl = import.meta.env.VITE_BACKEND_URL
 export const currency = '$'
+
 const ROLE_PERMISSIONS = { 
    admin: [
       'products:create', 'products:read', 'products:update', 'products:delete','products:view',
@@ -48,7 +50,7 @@ const RouteValidator = ({ children, resource, action }) => {
   
   useEffect(() => {
     const checkAuth = () => {
-      const token = localStorage.getItem('token'); // Todavía lo usamos como señal o podemos usar una cookie de 'logged_in'
+      const token = localStorage.getItem('token'); 
       
       if (!token) {
         setIsAuthorized(false);
@@ -87,6 +89,7 @@ const App = () => {
   const [token, setToken] = useState(localStorage.getItem('token') ? localStorage.getItem('token') : '')
   const [userRole, setUserRole] = useState('customer')
   const [userPermissions, setUserPermissions] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // Configurar interceptor de Axios para refresco de token
@@ -99,11 +102,15 @@ const App = () => {
           try {
             const response = await axios.post(`${backendUrl}/api/user/refresh`);
             if (response.data.success) {
-              setToken(response.data.token);
+              const newToken = response.data.token;
+              setToken(newToken);
+              localStorage.setItem('token', newToken); // Asegurar persistencia en admin
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
               return axios(originalRequest);
             }
           } catch (refreshError) {
             setToken('');
+            localStorage.removeItem('token');
             return Promise.reject(refreshError);
           }
         }
@@ -111,6 +118,7 @@ const App = () => {
       }
     );
 
+    // Verificación inicial de sesión y carga progresiva
     if (token) {
       localStorage.setItem('token', token)
       try {
@@ -127,11 +135,19 @@ const App = () => {
       localStorage.removeItem('token')
     }
 
-    return () => axios.interceptors.response.eject(interceptor);
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 1500)
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+      clearTimeout(timer);
+    };
   }, [token])
 
   return (
     <main>
+      {isLoading && <LoadingScreen />}
       <ToastContainer />
       {token === '' ? (
         <Login settoken={setToken} />
@@ -177,28 +193,22 @@ const App = () => {
                     <UserManagement token={token} />
                   </RouteValidator>
                 } />
-
                 <Route path='/municipalities' element={
                   <RouteValidator resource="users" action="read">
                     <Municipalities url={backendUrl} />
                   </RouteValidator>
                 } />
-
                 <Route path='/categories' element={
                   <RouteValidator resource="categories" action="read">
                     <Categories token={token} />
                   </RouteValidator>
                 } />
-
                 <Route path='/offers' element={
                   <RouteValidator resource="products" action="read">
                     <Offers token={token} />
                   </RouteValidator>
                 } />
-                      
-                {/* Ruta para acceso no autorizado */}
                 <Route path='/unauthorized' element={<Unauthorized />} />
-                
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </div>

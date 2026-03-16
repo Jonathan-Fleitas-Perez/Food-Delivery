@@ -6,6 +6,7 @@ import axios from 'axios';
 // Contexto importado de ShopContextObject.js
 
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const ShopConstest = createContext();
 
 const ShopContextProvider = (props) => {
@@ -154,6 +155,7 @@ const ShopContextProvider = (props) => {
   // --- 2. Efectos (useEffect) ---
 
   useEffect(() => {
+    axios.defaults.withCredentials = true;
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       async (error) => {
@@ -165,6 +167,7 @@ const ShopContextProvider = (props) => {
             if (response.data.success) {
               const newToken = response.data.token;
               setToken(newToken);
+              localStorage.setItem('token', newToken); // Persistir el refresco
               originalRequest.headers.Authorization = `Bearer ${newToken}`;
               return axios(originalRequest);
             }
