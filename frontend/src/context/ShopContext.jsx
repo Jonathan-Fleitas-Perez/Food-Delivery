@@ -160,6 +160,13 @@ const ShopContextProvider = (props) => {
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
+        
+        // Evitar bucles de refresco si la propia ruta de refresh falla con 401
+        if (originalRequest.url.includes('/api/user/refresh')) {
+          logout();
+          return Promise.reject(error);
+        }
+
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
           try {
@@ -167,20 +174,27 @@ const ShopContextProvider = (props) => {
             if (response.data.success) {
               const newToken = response.data.token;
               setToken(newToken);
-              localStorage.setItem('token', newToken); // Persistir el refresco
+              localStorage.setItem('token', newToken);
               originalRequest.headers.Authorization = `Bearer ${newToken}`;
               return axios(originalRequest);
             }
           } catch (refreshError) {
+            // Si el refresco falla, redirigir al login y limpiar estado
             logout();
             return Promise.reject(refreshError);
           }
         }
+        
+        // Manejar otros errores 401 (ej. refresh token también expirado)
+        if (error.response?.status === 401) {
+          logout();
+        }
+
         return Promise.reject(error);
       }
     );
     return () => axios.interceptors.response.eject(interceptor);
-  }, [token, backendUrl, logout]);
+  }, [backendUrl, logout]);
 
   useEffect(() => {
     const initApp = async () => {

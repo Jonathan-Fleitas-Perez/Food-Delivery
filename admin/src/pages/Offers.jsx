@@ -93,7 +93,7 @@ const Offers = ({ token }) => {
             <form onSubmit={onSubmitHandler} className='flex flex-col gap-y-4 mb-12 max-w-xl'>
                 <p className='medium-16'>Subir nueva oferta</p>
                 <div className='flex items-center gap-4'>
-                    <label htmlFor="image" className='cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-4 hover:bg-gray-50 transition-all w-40 h-40 bg-gray-50'>
+                    <label htmlFor="image" className='cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-4 hover:bg-secondary/5 transition-all w-40 h-40 bg-primary'>
                         {image ? (
                             <img src={URL.createObjectURL(image)} alt="" className='w-full h-full object-cover rounded-lg' />
                         ) : (
@@ -105,7 +105,7 @@ const Offers = ({ token }) => {
                         <input onChange={(e) => setImage(e.target.files[0])} type="file" id="image" hidden />
                     </label>
                     <div className='flex flex-col gap-2'>
-                        <button disabled={loading} type='submit' className='btn-dark flexCenter gap-2 py-3 px-8 rounded-xl'>
+                        <button disabled={loading} type='submit' className='btn-dark !bg-secondary flexCenter gap-2 py-3 px-8 rounded-xl'>
                             {loading ? 'Subiendo...' : <><FaPlus /> Añadir Oferta</>}
                         </button>
                         {image && (
@@ -144,7 +144,7 @@ const Offers = ({ token }) => {
             </div>
 
             {offers.length === 0 && (
-                <div className='text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-200'>
+                <div className='text-center py-20 bg-primary rounded-2xl border border-dashed border-gray-200'>
                     <p className='text-gray-400'>No hay ofertas creadas aún.</p>
                 </div>
             )}

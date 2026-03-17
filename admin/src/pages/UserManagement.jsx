@@ -193,7 +193,7 @@ const UserManagement = ({ token }) => {
           
           <button 
             onClick={openCreateModal}
-            className="flex items-center justify-center px-4 py-2 space-x-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+            className="flex items-center justify-center px-4 py-2 space-x-2 text-white bg-secondary rounded-md hover:bg-secondary/90"
             disabled={!userPermissions.includes('users:create')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
@@ -207,7 +207,7 @@ const UserManagement = ({ token }) => {
       {/* Vista de escritorio - Tabla */}
       <div className="hidden overflow-x-auto bg-white rounded-lg shadow md:block">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-primary">
             <tr>
               <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Nombre</th>
               <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Email</th>
@@ -217,7 +217,7 @@ const UserManagement = ({ token }) => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {currentUsers.map(user => (
-              <tr key={user._id} className="hover:bg-gray-50">
+              <tr key={user._id} className="hover:bg-primary/25">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex items-center justify-center w-10 h-10 mr-3 bg-indigo-100 rounded-full">

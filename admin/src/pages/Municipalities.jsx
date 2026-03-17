@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { backendUrl } from '../App';
 import { FaEdit, FaTrash, FaPlus, FaCheck, FaTimes } from 'react-icons/fa';
 
+// eslint-disable-next-line no-unused-vars
 const Municipalities = ({ url }) => {
     const [municipalities, setMunicipalities] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -170,7 +171,7 @@ const Municipalities = ({ url }) => {
                 <div className='overflow-x-auto'>
                     <table className='w-full text-left border-collapse'>
                         <thead>
-                            <tr className='bg-gray-50 border-b border-gray-200 text-gray-600 font-medium text-sm'>
+                            <tr className='bg-primary/50 border-b border-gray-200 text-gray-600 font-medium text-sm'>
                                 <th className='p-4'>Nombre</th>
                                 <th className='p-4 w-32'>Costo</th>
                                 <th className='p-4 w-24 text-center'>Estado</th>
@@ -188,7 +189,7 @@ const Municipalities = ({ url }) => {
                                 </tr>
                             ) : (
                                 municipalities.map((mun) => (
-                                    <tr key={mun._id} className='border-b border-gray-100 hover:bg-gray-50 transition-colors last:border-b-0'>
+                                    <tr key={mun._id} className='border-b border-gray-100 hover:bg-primary/50 transition-colors last:border-b-0'>
                                         <td className='p-4 font-medium text-gray-800'>{mun.name}</td>
                                         <td className='p-4 text-gray-600'>${mun.deliveryFee}</td>
                                         <td className='p-4 text-center'>

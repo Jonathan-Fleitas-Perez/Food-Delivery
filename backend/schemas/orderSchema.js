@@ -81,7 +81,9 @@ export const listOrderSchema = z.object({
     page: z.coerce.number().int().positive().optional().default(1),
     limit: z.coerce.number().int().positive().max(100).optional().default(10),
     status: z.string().optional(),
-    userId: objectIdSchema.optional()
+    userId: objectIdSchema.optional(),
+    startDate: z.coerce.number().optional(),
+    endDate: z.coerce.number().optional()
 });
 // Esquema para verificación de Stripe
 export const verifyStripeSchema = z.object({

@@ -97,6 +97,13 @@ const App = () => {
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
+        
+        if (originalRequest.url.includes('/api/user/refresh')) {
+          setToken('');
+          localStorage.removeItem('token');
+          return Promise.reject(error);
+        }
+
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
           try {
@@ -104,7 +111,7 @@ const App = () => {
             if (response.data.success) {
               const newToken = response.data.token;
               setToken(newToken);
-              localStorage.setItem('token', newToken); // Asegurar persistencia en admin
+              localStorage.setItem('token', newToken);
               originalRequest.headers.Authorization = `Bearer ${newToken}`;
               return axios(originalRequest);
             }
@@ -114,6 +121,12 @@ const App = () => {
             return Promise.reject(refreshError);
           }
         }
+
+        if (error.response?.status === 401) {
+          setToken('');
+          localStorage.removeItem('token');
+        }
+
         return Promise.reject(error);
       }
     );

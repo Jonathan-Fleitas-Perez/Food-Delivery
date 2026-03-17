@@ -275,22 +275,29 @@ const deleteOrder = [
   })
 ];
 
-// Obtener todas las órdenes (panel admin) con paginación
+// Obtener todas las órdenes (panel admin) con paginación y filtros de fecha
 const allOrders = [
   validateSchema(listOrderSchema),
   handleDBOperation(async (req) => {
-    const { page = 1, limit = 10, status } = req.validatedData;
+    const { page = 1, limit = 10, status, startDate, endDate } = req.validatedData;
     const skip = (page - 1) * limit;
 
     // Construir query
     const query = {};
     if (status) query.status = status;
+    
+    // Filtro por rango de fechas
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = startDate;
+      if (endDate) query.date.$lte = endDate;
+    }
 
     const [orders, total] = await Promise.all([
       orderModel.find(query)
         .skip(skip)
         .limit(limit)
-        .sort({ createdAt: -1 })
+        .sort({ date: -1 }) // Ordenar por fecha descendente
         .populate('userId', 'name email')
         .lean(),
       orderModel.countDocuments(query)
@@ -309,16 +316,30 @@ const allOrders = [
   })
 ];
 
-// Obtener órdenes de usuario
-const userOrders = handleDBOperation(async (req) => {
-  const userId = req.user.id; // Obtener del token
-  
-  const orders = await orderModel.find({ userId })
-    .sort({ createdAt: -1 })
-    .lean();
-  
-  return { success: true, orders };
-});
+// Obtener órdenes de usuario con filtros de fecha
+const userOrders = [
+  validateSchema(listOrderSchema), // Reutilizar el esquema para filtros
+  handleDBOperation(async (req) => {
+    const userId = req.user.id; // Obtener del token
+    const { startDate, endDate } = req.validatedData;
+    
+    // Construir query
+    const query = { userId };
+    
+    // Filtro por rango de fechas
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) query.date.$gte = startDate;
+      if (endDate) query.date.$lte = endDate;
+    }
+    
+    const orders = await orderModel.find(query)
+      .sort({ date: -1 })
+      .lean();
+    
+    return { success: true, orders };
+  })
+];
 
 // Actualizar estado de orden
 const orderStatus = [

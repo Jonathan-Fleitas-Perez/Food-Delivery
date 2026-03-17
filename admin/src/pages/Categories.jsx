@@ -189,7 +189,7 @@ const Categories = ({ token }) => {
                   required
                   value={newCategory.name}
                   onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
-                  className='w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary/50 outline-none bg-gray-50'
+                  className='w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-secondary/50 outline-none bg-primary'
                   placeholder='Ej: Pizza'
                 />
               </div>
@@ -197,7 +197,7 @@ const Categories = ({ token }) => {
                 <label className='block text-sm font-medium text-gray-700 mb-1'>Imagen de Categoría</label>
                 <div className='flex items-center gap-4'>
                     <label htmlFor="image" className='cursor-pointer'>
-                        <div className='w-20 h-20 border-2 border-dashed border-gray-300 rounded-xl flexCenter overflow-hidden bg-gray-50 hover:bg-gray-100 transition-colors'>
+                        <div className='w-20 h-20 border-2 border-dashed border-gray-300 rounded-xl flexCenter overflow-hidden bg-primary hover:bg-gray-100 transition-colors'>
                             {image ? (
                                 <img src={URL.createObjectURL(image)} alt="Preview" className='w-full h-full object-cover' />
                             ) : (

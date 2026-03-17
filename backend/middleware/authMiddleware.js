@@ -17,13 +17,20 @@ export const authenticateUser = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Ahora incluye permisos
+    req.user = decoded; 
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expirado', code: 'TOKEN_EXPIRED' });
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Sesión expirada', 
+        code: 'TOKEN_EXPIRED' 
+      });
     }
-    res.status(401).json({ error: 'Token inválido' });
+    res.status(401).json({ 
+      success: false, 
+      message: 'Acceso no autorizado' 
+    });
   }
 };
 

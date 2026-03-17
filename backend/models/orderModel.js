@@ -71,5 +71,8 @@ const orderSchema = new mongoose.Schema({
   }
 });
 
+// Agregar índice para consultas por fecha
+orderSchema.index({ date: -1 });
+
 const orderModel = mongoose.models.order || mongoose.model('order', orderSchema);
 export default orderModel;
